@@ -30,7 +30,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     // Constructor principal
     public JuegoPanel(boolean musicaActivada) {
         this.musicaActivada = musicaActivada; // Recibe si la música debe estar activada
-        fondo = new ImageIcon("C:/JAVA/juegojava/src/Resources/fondo juego.jpg").getImage(); // Carga la imagen de fondo
+        fondo = new ImageIcon("Resources/fondo juego.jpg").getImage(); // Carga la imagen de fondo
         pajaro = new Personaje(200, 300); // Inicializa el personaje en una posición fija
         obstaculos = new ArrayList<>(); // Inicializa la lista de obstáculos
         tiempo = new Timer(20, this); // Configura el temporizador para actualizar cada 20 ms
@@ -70,7 +70,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     // Método para cargar la música de fondo
     private void cargarMusicaFondo() {
         try {
-            File musicaArchivo = new File("C:/JAVA/juegojava/src/Resources/Juego 35.wav");
+            File musicaArchivo = new File("Resources/Juego 35.wav");
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
             musicaFondo = AudioSystem.getClip();
             musicaFondo.open(audioStream);
@@ -144,12 +144,12 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
         // Obstáculo superior
         obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
-                "C:/JAVA/juegojava/src/Resources/obstacle - copia.png"));
+                "Resources/obstacle - copia.png"));
 
         // Obstáculo inferior
         obstaculos.add(new Obstaculos(getWidth(), alturaObstaculoSuperior + espacioVertical, ANCHO_OBSTACULO,
                 alturaVentana - alturaObstaculoSuperior - espacioVertical,
-                "C:/JAVA/juegojava/src/Resources/obstacle.png"));
+                "Resources/obstacle.png"));
     }
 
     public void keyPressed(KeyEvent e) {
