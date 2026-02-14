@@ -1,46 +1,61 @@
 package juegojava;
-import javax.swing.*; // Importa los componentes de interfaz gráfica (como JPanel, JLabel, JButton)
-import java.awt.*; // Importa herramientas de dibujo y configuración gráfica
-import java.awt.event.*; // Importa clases para manejar eventos
-import javax.sound.sampled.*; // Importa clases para manejar audio
-import java.io.*; // Importa clases para entrada/salida de archivos
-import java.util.ArrayList; // Importa la clase ArrayList para manejar listas dinámicas
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
 public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
-    // Declaración de variables principales
-    private Timer tiempo; // Temporizador para actualizar el juego
-    private Image fondo; // Imagen de fondo del juego
-    private Personaje pajaro; // Objeto que representa el personaje del juego
-    private ArrayList<Obstaculos> obstaculos; // Lista dinámica de obstáculos
-    private int contadorTiempo; // Contador para generar obstáculos periódicamente
-    private int contadorSaltos; // Contador para la puntuación
-    private int highScore; // Mayor puntuación lograda
-    private static final String HIGH_SCORE_FILE = "highscore.txt"; // Archivo donde se guarda el récord
-    private static final int ESPACIO_ENTRE_OBSTACULOS = 200; // Espacio vertical entre obstáculos
-    private static final int ANCHO_OBSTACULO = 120; // Ancho de cada obstáculo
+    private Timer tiempo;
+    private Image fondo;
+    private Personaje pajaro;
+    private ArrayList<Obstaculos> obstaculos;
+    private int contadorTiempo;
+    private int contadorSaltos;
+    private int highScore;
+    private static final String HIGH_SCORE_FILE = "highscore.txt";
+    private static final int ANCHO_OBSTACULO = 120;
 
-    // Componentes para el mensaje de perder
-    private JLabel mensajePerder; // Muestra un mensaje cuando se pierde
-    private JButton botonReiniciar; // Botón para reiniciar el juego
+    private JLabel mensajePerder;
+    private JButton botonReiniciar;
 
-    // Reproductor de música
-    private Clip musicaFondo; // Controla el audio de fondo
-    private boolean musicaActivada; // Controla si la música está activada o no
+    private Clip musicaFondo;
+    private boolean musicaActivada;
 
-    // Constructor principal
     public JuegoPanel(boolean musicaActivada) {
-        this.musicaActivada = musicaActivada; // Recibe si la música debe estar activada
-        fondo = new ImageIcon("Resources/fondo juego.jpg").getImage(); // Carga la imagen de fondo
-        pajaro = new Personaje(200, 300); // Inicializa el personaje en una posición fija
-        obstaculos = new ArrayList<>(); // Inicializa la lista de obstáculos
-        tiempo = new Timer(20, this); // Configura el temporizador para actualizar cada 20 ms
-        tiempo.start(); // Inicia el temporizador
+        this.musicaActivada = musicaActivada;
+        fondo = ResourceLoader.loadImage("Resources/fondo juego.jpg");
+        pajaro = new Personaje(200, 300);
+        obstaculos = new ArrayList<>();
+        tiempo = new Timer(20, this);
+        tiempo.start();
 
-        setFocusable(true); // Habilita el foco en el panel para recibir eventos de teclado
-        addKeyListener(this); // Asocia el panel como receptor de eventos de teclado
-        requestFocusInWindow(); // Solicita el foco en la ventana
+        setFocusable(true);
+        addKeyListener(this);
+        requestFocusInWindow();
 
-        // Configura los componentes de interfaz gráfica para el mensaje de perder
         mensajePerder = new JLabel("¡Perdiste! Tu puntuación es: 0");
         mensajePerder.setFont(new Font("Arial", Font.BOLD, 60));
         mensajePerder.setForeground(Color.WHITE);
@@ -51,124 +66,128 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         botonReiniciar.setFont(new Font("Arial", Font.BOLD, 40));
         botonReiniciar.setBackground(Color.WHITE);
         botonReiniciar.setForeground(Color.BLACK);
-        botonReiniciar.addActionListener(e -> reiniciarJuego()); // Asocia la acción de reiniciar
+        botonReiniciar.addActionListener(e -> reiniciarJuego());
         botonReiniciar.setVisible(false);
 
-        setLayout(new BorderLayout()); // Usa un diseño de bordes
-        add(mensajePerder, BorderLayout.CENTER); // Añade el mensaje al centro
-        add(botonReiniciar, BorderLayout.SOUTH); // Añade el botón en la parte inferior
+        setLayout(new BorderLayout());
+        add(mensajePerder, BorderLayout.CENTER);
+        add(botonReiniciar, BorderLayout.SOUTH);
 
-        contadorSaltos = 0; // Inicializa la puntuación a 0
+        contadorSaltos = 0;
 
         if (musicaActivada) {
-            cargarMusicaFondo(); // Carga la música si está activada
+            cargarMusicaFondo();
         }
 
-        cargarHighScore(); // Carga el récord desde el archivo
+        cargarHighScore();
     }
 
-    // Método para cargar la música de fondo
     private void cargarMusicaFondo() {
         try {
-            File musicaArchivo = new File("Resources/Juego 35.wav");
+            File musicaArchivo = ResourceLoader.findFile("Resources/Juego 35.wav");
+            if (musicaArchivo == null) {
+                return;
+            }
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
             musicaFondo = AudioSystem.getClip();
             musicaFondo.open(audioStream);
-            musicaFondo.loop(Clip.LOOP_CONTINUOUSLY); // Reproduce la música en bucle
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-            e.printStackTrace();
+            musicaFondo.loop(Clip.LOOP_CONTINUOUSLY);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ignored) {
         }
     }
 
-    // Método para cargar el récord desde un archivo
     private void cargarHighScore() {
         try (BufferedReader reader = new BufferedReader(new FileReader(HIGH_SCORE_FILE))) {
             highScore = Integer.parseInt(reader.readLine());
         } catch (IOException | NumberFormatException e) {
-            highScore = 0; // Si no hay archivo o está corrupto, inicializa el récord en 0
+            highScore = 0;
         }
     }
 
-    // Método para guardar el récord en un archivo
     private void guardarHighScore() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(HIGH_SCORE_FILE))) {
             writer.write(String.valueOf(highScore));
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
     }
 
+    @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g); // Dibuja el fondo del panel
-        g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this); // Dibuja la imagen de fondo
-        pajaro.draw(g); // Dibuja el personaje
+        super.paintComponent(g);
+        if (fondo != null) {
+            g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this);
+        } else {
+            g.setColor(new Color(20, 30, 50));
+            g.fillRect(0, 0, getWidth(), getHeight());
+        }
+        pajaro.draw(g);
 
         for (Obstaculos obstaculo : obstaculos) {
-            obstaculo.dibujar(g); // Dibuja cada obstáculo
+            obstaculo.dibujar(g);
         }
-        
-        // Dibuja la puntuación y el récord
+
         g.setFont(new Font("Arial", Font.BOLD, 40));
         g.setColor(Color.WHITE);
         g.drawString("Puntuación: " + contadorSaltos, 20, 40);
         g.drawString("Récord: " + highScore, 20, 80);
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
-        pajaro.update(getHeight()); // Actualiza la posición del personaje
+        pajaro.update(getHeight());
 
         for (Obstaculos obstaculo : obstaculos) {
-            obstaculo.mover(10); // Mueve los obstáculos hacia la izquierda
+            obstaculo.mover(10);
         }
-        obstaculos.removeIf(Obstaculos::fueraDePantalla); // Elimina los obstáculos fuera de la pantalla
+        obstaculos.removeIf(Obstaculos::fueraDePantalla);
 
         contadorTiempo++;
-        if (contadorTiempo % 80 == 0) { // Genera un nuevo par de obstáculos periódicamente
+        if (contadorTiempo % 80 == 0) {
             generarObstaculos();
         }
 
         for (Obstaculos obstaculo : obstaculos) {
-            if (pajaro.getBounds().intersects(obstaculo.getBounds())) { // Detecta colisiones
+            if (pajaro.getBounds().intersects(obstaculo.getBounds())) {
                 perder();
                 return;
             }
         }
-        repaint(); // Redibuja el panel
+        repaint();
     }
 
-    // Método para generar obstáculos
     private void generarObstaculos() {
         int alturaVentana = getHeight();
-        int espacioVertical = 210; // Espacio entre los obstáculos superior e inferior
+        int espacioVertical = 210;
         int alturaObstaculoSuperior = (int) (Math.random() * (alturaVentana - espacioVertical - 100)) + 60;
 
-        // Obstáculo superior
         obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
                 "Resources/obstacle - copia.png"));
 
-        // Obstáculo inferior
         obstaculos.add(new Obstaculos(getWidth(), alturaObstaculoSuperior + espacioVertical, ANCHO_OBSTACULO,
                 alturaVentana - alturaObstaculoSuperior - espacioVertical,
                 "Resources/obstacle.png"));
     }
 
+    @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_SPACE) { // Detecta la tecla "espacio" para saltar
+        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             pajaro.jump();
             contadorSaltos++;
         }
     }
 
+    @Override
     public void keyReleased(KeyEvent e) {}
+
+    @Override
     public void keyTyped(KeyEvent e) {}
 
-    // Método llamado al perder el juego
     private void perder() {
-        tiempo.stop(); // Detiene el temporizador
+        tiempo.stop();
 
         if (contadorSaltos > highScore) {
             highScore = contadorSaltos;
-            guardarHighScore(); // Actualiza el récord si es superado
+            guardarHighScore();
             mensajePerder.setText("¡Nuevo récord! Puntuación: " + contadorSaltos);
         } else {
             mensajePerder.setText("¡Perdiste! Tu puntuación es: " + contadorSaltos);
@@ -178,28 +197,27 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         botonReiniciar.setVisible(true);
 
         if (musicaFondo != null && musicaFondo.isRunning()) {
-            musicaFondo.stop(); // Detiene la música
+            musicaFondo.stop();
         }
     }
 
-    // Método para reiniciar el juego
     private void reiniciarJuego() {
         contadorTiempo = 0;
         contadorSaltos = 0;
-        obstaculos.clear(); // Elimina todos los obstáculos
-        pajaro = new Personaje(100, 300); // Restaura la posición del personaje
+        obstaculos.clear();
+        pajaro = new Personaje(100, 300);
 
         mensajePerder.setVisible(false);
         botonReiniciar.setVisible(false);
 
-        tiempo.start(); // Reanuda el temporizador
+        tiempo.start();
         repaint();
 
         if (musicaActivada) {
             if (musicaFondo != null && musicaFondo.isRunning()) {
                 musicaFondo.stop();
             }
-            cargarMusicaFondo(); // Reinicia la música
+            cargarMusicaFondo();
         }
     }
 }

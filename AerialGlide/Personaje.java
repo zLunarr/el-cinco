@@ -1,9 +1,9 @@
 package juegojava;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
-import javax.swing.ImageIcon;
 
 public class Personaje {
     private int x;
@@ -18,7 +18,7 @@ public class Personaje {
         this.x = x;
         this.y = y;
         this.velocidad = 0;
-        this.imagen = new ImageIcon("Resources/bird.png").getImage();
+        this.imagen = ResourceLoader.loadImage("Resources/bird.png");
     }
 
     public void update(int panelHeight) {
@@ -45,7 +45,12 @@ public class Personaje {
     }
 
     public void draw(Graphics g) {
-        g.drawImage(imagen, x, y, ancho, alto, null);
+        if (imagen != null) {
+            g.drawImage(imagen, x, y, ancho, alto, null);
+        } else {
+            g.setColor(Color.YELLOW);
+            g.fillOval(x, y, ancho, alto);
+        }
     }
 
     public Rectangle getBounds() {

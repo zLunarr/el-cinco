@@ -1,12 +1,30 @@
 package juegojava;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import javax.sound.sampled.*;
-import javax.swing.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import online.Server;
 
 class MenuPanel extends JPanel {
@@ -16,7 +34,7 @@ class MenuPanel extends JPanel {
 
     public MenuPanel(JFrame frame) {
         setLayout(new GridBagLayout());
-        fondo = new ImageIcon("Resources/background.png").getImage();
+        fondo = ResourceLoader.loadImage("Resources/background.png");
 
         cargarMusicaFondo();
 
@@ -38,7 +56,8 @@ class MenuPanel extends JPanel {
     }
 
     private JButton crearBoton(String texto, String rutaImagen) {
-        JButton boton = new JButton(texto, new ImageIcon(rutaImagen));
+        Image image = ResourceLoader.loadImage(rutaImagen);
+        JButton boton = image != null ? new JButton(texto, new ImageIcon(image)) : new JButton(texto);
         boton.setPreferredSize(new Dimension(300, 70));
         boton.setFont(new Font("Arial", Font.BOLD, 20));
         boton.setBackground(Color.CYAN);
@@ -122,7 +141,6 @@ class MenuPanel extends JPanel {
         return username.trim();
     }
 
-
     private String obtenerIpLocal() {
         try {
             return InetAddress.getLocalHost().getHostAddress();
@@ -136,7 +154,12 @@ class MenuPanel extends JPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this);
+                if (fondo != null) {
+                    g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this);
+                } else {
+                    g.setColor(new Color(30, 30, 40));
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
             }
         };
     }
@@ -187,7 +210,11 @@ class MenuPanel extends JPanel {
             if (musicaFondo != null && musicaFondo.isRunning()) {
                 musicaFondo.stop();
             }
-            File musicaArchivo = new File("Resources/Juego 35.wav");
+            File musicaArchivo = ResourceLoader.findFile("Resources/Juego 35.wav");
+            if (musicaArchivo == null) {
+                musicaActivada = false;
+                return;
+            }
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
             musicaFondo = AudioSystem.getClip();
             musicaFondo.open(audioStream);
