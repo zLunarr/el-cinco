@@ -33,7 +33,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     private Personaje pajaro;
     private ArrayList<Obstaculos> obstaculos;
     private int contadorTiempo;
-    private int contadorSaltos;
+    private int puntuacion;
     private int highScore;
     private static final String HIGH_SCORE_FILE = "highscore.txt";
     private static final int ANCHO_OBSTACULO = 120;
@@ -73,7 +73,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         add(mensajePerder, BorderLayout.CENTER);
         add(botonReiniciar, BorderLayout.SOUTH);
 
-        contadorSaltos = 0;
+        puntuacion = 0;
 
         if (musicaActivada) {
             cargarMusicaFondo();
@@ -128,12 +128,16 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
         g.setFont(new Font("Arial", Font.BOLD, 40));
         g.setColor(Color.WHITE);
-        g.drawString("Puntuación: " + contadorSaltos, 20, 40);
+        g.drawString("Puntuación: " + puntuacion, 20, 40);
         g.drawString("Récord: " + highScore, 20, 80);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        if (getWidth() <= 0 || getHeight() <= 0) {
+            return;
+        }
+
         pajaro.update(getHeight());
 
         for (Obstaculos obstaculo : obstaculos) {
@@ -151,6 +155,12 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
                 perder();
                 return;
             }
+
+            if (obstaculo.getY() > 0 && !obstaculo.isPuntuado()
+                    && pajaro.getBounds().x > obstaculo.getX() + obstaculo.getWidth()) {
+                obstaculo.marcarPuntuado();
+                puntuacion++;
+            }
         }
         repaint();
     }
@@ -158,7 +168,8 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     private void generarObstaculos() {
         int alturaVentana = getHeight();
         int espacioVertical = 210;
-        int alturaObstaculoSuperior = (int) (Math.random() * (alturaVentana - espacioVertical - 100)) + 60;
+        int maxAlturaSuperior = Math.max(1, alturaVentana - espacioVertical - 120);
+        int alturaObstaculoSuperior = (int) (Math.random() * maxAlturaSuperior) + 60;
 
         obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
                 "Resources/obstacle - copia.png"));
@@ -172,7 +183,6 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             pajaro.jump();
-            contadorSaltos++;
         }
     }
 
@@ -185,12 +195,12 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     private void perder() {
         tiempo.stop();
 
-        if (contadorSaltos > highScore) {
-            highScore = contadorSaltos;
+        if (puntuacion > highScore) {
+            highScore = puntuacion;
             guardarHighScore();
-            mensajePerder.setText("¡Nuevo récord! Puntuación: " + contadorSaltos);
+            mensajePerder.setText("¡Nuevo récord! Puntuación: " + puntuacion);
         } else {
-            mensajePerder.setText("¡Perdiste! Tu puntuación es: " + contadorSaltos);
+            mensajePerder.setText("¡Perdiste! Tu puntuación es: " + puntuacion);
         }
 
         mensajePerder.setVisible(true);
@@ -203,7 +213,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
     private void reiniciarJuego() {
         contadorTiempo = 0;
-        contadorSaltos = 0;
+        puntuacion = 0;
         obstaculos.clear();
         pajaro = new Personaje(100, 300);
 
