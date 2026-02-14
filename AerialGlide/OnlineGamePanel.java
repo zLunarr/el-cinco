@@ -8,12 +8,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import online.Client;
-import online.ClientListener;
 
-public class OnlineGamePanel extends JPanel implements ActionListener, KeyListener, ClientListener {
+public class OnlineGamePanel extends JPanel implements ActionListener, KeyListener {
     private final Client client;
     private final Timer timer;
 
@@ -45,7 +43,30 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         localPlayer.update(getHeight());
         localScore++;
         client.sendState(localPlayer.getY(), localScore, true);
+
+        String message;
+        while ((message = client.pollMessage()) != null) {
+            processMessage(message);
+        }
+
         repaint();
+    }
+
+    private void processMessage(String message) {
+        String[] parts = message.split("\\$");
+        switch (parts[0]) {
+            case "jump" -> remotePlayer.jump();
+            case "state" -> {
+                if (parts.length >= 4) {
+                    remotePlayer.setY(Integer.parseInt(parts[1]));
+                    remoteScore = Integer.parseInt(parts[2]);
+                    remoteAlive = Boolean.parseBoolean(parts[3]);
+                }
+            }
+            case "disconnect" -> remoteAlive = false;
+            default -> {
+            }
+        }
     }
 
     @Override
@@ -83,33 +104,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     @Override
     public void keyTyped(KeyEvent e) {}
-
-    @Override
-    public void onMessage(String message) {
-        String[] parts = message.split("\\$");
-        switch (parts[0]) {
-            case "jump" -> SwingUtilities.invokeLater(remotePlayer::jump);
-            case "state" -> {
-                if (parts.length >= 4) {
-                    int y = Integer.parseInt(parts[1]);
-                    int score = Integer.parseInt(parts[2]);
-                    boolean alive = Boolean.parseBoolean(parts[3]);
-                    SwingUtilities.invokeLater(() -> {
-                        remotePlayer.setY(y);
-                        remoteScore = score;
-                        remoteAlive = alive;
-                        repaint();
-                    });
-                }
-            }
-            case "disconnect" -> SwingUtilities.invokeLater(() -> {
-                remoteAlive = false;
-                repaint();
-            });
-            default -> {
-            }
-        }
-    }
 
     @Override
     public void removeNotify() {

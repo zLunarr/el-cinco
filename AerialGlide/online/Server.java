@@ -11,20 +11,29 @@ import java.util.List;
 public class Server extends Thread {
     private static Server instance;
 
-    private DatagramSocket socket;
+    private static class Peer {
+        String username;
+        InetAddress ip;
+        int port;
+
+        Peer(String username, InetAddress ip, int port) {
+            this.username = username;
+            this.ip = ip;
+            this.port = port;
+        }
+    }
+
     private final int port;
+    private final List<Peer> peers;
+    private DatagramSocket socket;
     private volatile boolean end;
-    private final int maxClients;
-    private final List<User> users;
 
     public Server() {
         this.port = 5555;
-        this.end = false;
-        this.maxClients = 2;
-        this.users = new ArrayList<>();
+        this.peers = new ArrayList<>();
 
         try {
-            socket = new DatagramSocket(port);
+            this.socket = new DatagramSocket(port);
             System.out.println("Servidor iniciado en el puerto " + port);
         } catch (SocketException e) {
             throw new RuntimeException(e);
@@ -65,13 +74,13 @@ public class Server extends Thread {
             return;
         }
 
-        int sender = searchUser(packet.getAddress(), packet.getPort());
+        int sender = searchPeer(packet.getAddress(), packet.getPort());
         if (sender == -1) {
             return;
         }
 
         if ("disconnect".equals(command)) {
-            users.remove(sender);
+            peers.remove(sender);
             pingEveryone("waiting");
             return;
         }
@@ -79,56 +88,54 @@ public class Server extends Thread {
         relayToOthers(sender, message);
     }
 
-    private void onConnect(String[] parts, InetAddress address, int port) {
-        if (searchUser(address, port) != -1) {
-            sendMessage("connected$" + (searchUser(address, port) + 1), address, port);
+    private void onConnect(String[] parts, InetAddress ip, int port) {
+        int existing = searchPeer(ip, port);
+        if (existing != -1) {
+            sendMessage("connected$" + (existing + 1), ip, port);
             return;
         }
 
-        if (users.size() >= maxClients) {
-            sendMessage("full", address, port);
+        if (peers.size() >= 2) {
+            sendMessage("full", ip, port);
             return;
         }
 
-        String username = parts.length > 1 ? parts[1] : "usuario" + (users.size() + 1);
-        User user = new User(username, address, port);
-        users.add(user);
+        String username = parts.length > 1 ? parts[1] : "usuario" + (peers.size() + 1);
+        peers.add(new Peer(username, ip, port));
 
-        int index = users.size();
-        sendMessage("connected$" + index, address, port);
+        sendMessage("connected$" + peers.size(), ip, port);
 
-        if (users.size() < maxClients) {
-            sendMessage("waiting", address, port);
+        if (peers.size() < 2) {
+            sendMessage("waiting", ip, port);
             return;
         }
 
-        String startMessage = "start$" + users.get(0).getUsername() + "$" + users.get(1).getUsername();
-        pingEveryone(startMessage);
+        pingEveryone("start$" + peers.get(0).username + "$" + peers.get(1).username);
     }
 
-    private void relayToOthers(int sender, String message) {
-        for (int i = 0; i < users.size(); i++) {
-            if (i == sender) {
-                continue;
-            }
-            User user = users.get(i);
-            sendMessage(message, user.getIp(), user.getPort());
-        }
-    }
-
-    private int searchUser(InetAddress ip, int port) {
-        for (int i = 0; i < users.size(); i++) {
-            User user = users.get(i);
-            if (user.getIp().equals(ip) && user.getPort() == port) {
+    private int searchPeer(InetAddress ip, int port) {
+        for (int i = 0; i < peers.size(); i++) {
+            Peer peer = peers.get(i);
+            if (peer.ip.equals(ip) && peer.port == port) {
                 return i;
             }
         }
         return -1;
     }
 
+    private void relayToOthers(int sender, String message) {
+        for (int i = 0; i < peers.size(); i++) {
+            if (i == sender) {
+                continue;
+            }
+            Peer peer = peers.get(i);
+            sendMessage(message, peer.ip, peer.port);
+        }
+    }
+
     private void pingEveryone(String message) {
-        for (User user : users) {
-            sendMessage(message, user.getIp(), user.getPort());
+        for (Peer peer : peers) {
+            sendMessage(message, peer.ip, peer.port);
         }
     }
 

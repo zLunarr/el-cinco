@@ -3,6 +3,8 @@ package juegojava;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import javax.sound.sampled.*;
 import javax.swing.*;
 import online.Server;
@@ -91,6 +93,8 @@ class MenuPanel extends JPanel {
     private void iniciarSalaComoHost(JFrame frame) {
         Server.ensureRunning();
         String username = pedirUsername();
+        String localIp = obtenerIpLocal();
+        JOptionPane.showMessageDialog(frame, "Servidor creado. Pasale esta IP al otro jugador: " + localIp + "\nPuerto UDP: 5555");
         MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, "127.0.0.1", username);
         frame.setContentPane(lobby);
         frame.revalidate();
@@ -98,7 +102,7 @@ class MenuPanel extends JPanel {
     }
 
     private void iniciarSalaComoCliente(JFrame frame) {
-        String ip = JOptionPane.showInputDialog(frame, "IP del servidor:", "127.0.0.1");
+        String ip = JOptionPane.showInputDialog(frame, "IP del servidor (ej: 192.168.1.20):", "");
         if (ip == null || ip.isBlank()) {
             return;
         }
@@ -116,6 +120,15 @@ class MenuPanel extends JPanel {
             return "Jugador" + (int) (Math.random() * 1000);
         }
         return username.trim();
+    }
+
+
+    private String obtenerIpLocal() {
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            return "No disponible";
+        }
     }
 
     private JPanel crearPanelConFondo() {
@@ -155,6 +168,9 @@ class MenuPanel extends JPanel {
         frame.setContentPane(panelOpciones);
         frame.revalidate();
         frame.repaint();
+        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
+            cargarMusicaFondo();
+        }
     }
 
     private void volverAlMenu(JFrame frame) {

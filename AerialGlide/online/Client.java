@@ -6,23 +6,22 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Client extends Thread {
     private final InetAddress ipServer;
     private final int serverPort;
     private final DatagramSocket socket;
+    private final ConcurrentLinkedQueue<String> inbox;
     private volatile boolean end;
-    private final NetManager netManager;
-    private ClientListener listener;
 
-    public Client(String serverIp, int serverPort, NetManager netManager, ClientListener listener) {
+    public Client(String serverIp, int serverPort) {
         try {
             this.ipServer = InetAddress.getByName(serverIp);
             this.serverPort = serverPort;
             this.socket = new DatagramSocket();
-            this.socket.setSoTimeout(6000);
-            this.netManager = netManager;
-            this.listener = listener;
+            this.socket.setSoTimeout(250);
+            this.inbox = new ConcurrentLinkedQueue<>();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -34,14 +33,8 @@ public class Client extends Thread {
             try {
                 DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
                 socket.receive(packet);
-                String message = new String(packet.getData()).trim();
-                if (listener != null) {
-                    listener.onMessage(message);
-                }
-            } catch (SocketTimeoutException timeoutException) {
-                if (netManager != null) {
-                    netManager.timeOutEnded();
-                }
+                inbox.add(new String(packet.getData()).trim());
+            } catch (SocketTimeoutException ignored) {
             } catch (SocketException closed) {
                 end = true;
             } catch (IOException e) {
@@ -50,8 +43,8 @@ public class Client extends Thread {
         }
     }
 
-    public void setListener(ClientListener listener) {
-        this.listener = listener;
+    public String pollMessage() {
+        return inbox.poll();
     }
 
     public void connect(String username) {
@@ -73,15 +66,10 @@ public class Client extends Thread {
     private void sendMessage(String message) {
         byte[] data = message.getBytes();
         DatagramPacket packet = new DatagramPacket(data, data.length, ipServer, serverPort);
+
         try {
             socket.send(packet);
-            if (netManager != null && message.startsWith("connect")) {
-                netManager.connect(true);
-            }
         } catch (IOException e) {
-            if (netManager != null && message.startsWith("connect")) {
-                netManager.connect(false);
-            }
             throw new RuntimeException(e);
         }
     }
