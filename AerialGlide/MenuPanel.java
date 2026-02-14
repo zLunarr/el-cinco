@@ -93,8 +93,8 @@ class MenuPanel extends JPanel {
     }
 
     private void iniciarJuego(JFrame frame) {
-        detenerMusica();
-        JuegoPanel juego = new JuegoPanel(musicaActivada);
+        pausarMusicaMenu();
+        JuegoPanel juego = new JuegoPanel(frame, musicaActivada);
         frame.setContentPane(juego);
         frame.revalidate();
         frame.repaint();
@@ -252,6 +252,13 @@ class MenuPanel extends JPanel {
             musicaActivada = true;
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
             musicaActivada = false;
+        }
+    }
+
+
+    private void pausarMusicaMenu() {
+        if (musicaFondo != null && musicaFondo.isRunning()) {
+            musicaFondo.stop();
         }
     }
 
