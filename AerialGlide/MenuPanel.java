@@ -1,152 +1,236 @@
 package juegojava;
-import java.awt.*; // Importa clases para manejar gráficos y diseño.
-import java.awt.event.*; // Importa clases para manejar eventos.
-import javax.swing.*; // Importa clases para interfaces gráficas.
-import javax.sound.sampled.*; // Importa clases para manejar audio.
-import java.io.*; // Importa clases para manejar archivos.
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import online.Server;
 
 class MenuPanel extends JPanel {
-    private final Image fondo; // Imagen de fondo para el menú.
-    private Clip musicaFondo; // Clip de audio para la música de fondo.
-    private boolean musicaActivada = true; // Indica si la música está activada o no.
-    
-    public MenuPanel(JFrame frame) {
-        setLayout(new GridBagLayout()); // Usa un diseño de cuadrícula para centrar los componentes.
-        fondo = new ImageIcon("C:/JAVA/juegojava/src/Resources/background.png").getImage(); // Carga la imagen de fondo.
+    private final Image fondo;
+    private Clip musicaFondo;
+    private boolean musicaActivada = true;
 
-        // Carga y reproduce la música de fondo.
+    public MenuPanel(JFrame frame) {
+        setLayout(new GridBagLayout());
+        fondo = ResourceLoader.loadImage("Resources/background.png");
+
         cargarMusicaFondo();
 
-        // Crea los botones para el menú.
-        JButton jugarButton = crearBoton("Jugar", "C:/JAVA/juegojava/src/Resources/play_button.png");
-        JButton opcionesButton = crearBoton("Opciones", "C:/JAVA/juegojava/src/Resources/option_button.png");
+        JButton jugarButton = crearBoton("Jugar", "Resources/play_button.png");
+        JButton multijugadorButton = crearBoton("Multijugador", "Resources/select_character.png");
+        JButton opcionesButton = crearBoton("Opciones", "Resources/option_button.png");
 
-        JButton[] botones = {jugarButton, opcionesButton};
-        agregarEventos(frame, botones); // Asocia eventos a los botones.
+        JButton[] botones = {jugarButton, multijugadorButton, opcionesButton};
+        agregarEventos(frame, botones);
 
-        // Añade los botones al panel con espaciado vertical.
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(30, 30, 30, 30); // Margen entre botones.
-        gbc.gridx = 0; // Alinea los botones en el eje X.
-        gbc.gridy = 0; // Comienza en la primera fila.
+        gbc.insets = new Insets(20, 20, 20, 20);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         for (JButton boton : botones) {
-            add(boton, gbc); // Añade el botón al panel.
-            gbc.gridy++; // Incrementa la posición en el eje Y para el siguiente botón.
+            add(boton, gbc);
+            gbc.gridy++;
         }
     }
 
-     //Crea un botón con texto e imagen personalizada.
-     //rutaImagen Ruta de la imagen del botón.
     private JButton crearBoton(String texto, String rutaImagen) {
-        JButton boton = new JButton(texto, new ImageIcon(rutaImagen)); // Crea el botón con texto e imagen.
-        boton.setPreferredSize(new Dimension(300, 65)); // Tamaño del botón.
-        boton.setFont(new Font("Arial", Font.BOLD, 10)); // Fuente del texto.
-        boton.setBackground(Color.CYAN); // Color de fondo del botón.
-        boton.setForeground(Color.BLACK); // Color del texto.	
-        boton.setHorizontalTextPosition(SwingConstants.CENTER); // Centra el texto horizontalmente.
-        boton.setVerticalTextPosition(SwingConstants.BOTTOM); // Coloca el texto debajo de la imagen.
+        Image image = ResourceLoader.loadImage(rutaImagen);
+        JButton boton = image != null ? new JButton(texto, new ImageIcon(image)) : new JButton(texto);
+        boton.setPreferredSize(new Dimension(300, 70));
+        boton.setFont(new Font("Arial", Font.BOLD, 20));
+        boton.setBackground(Color.CYAN);
+        boton.setForeground(Color.BLACK);
+        boton.setHorizontalTextPosition(SwingConstants.CENTER);
+        boton.setVerticalTextPosition(SwingConstants.BOTTOM);
         return boton;
     }
 
     private void agregarEventos(JFrame frame, JButton[] botones) {
-        botones[0].addActionListener(e -> iniciarJuego(frame)); // Inicia el juego al hacer clic en "Jugar".
-        botones[1].addActionListener(e -> mostrarOpciones(frame)); // Muestra las opciones al hacer clic en "Opciones".
+        botones[0].addActionListener(e -> iniciarJuego(frame));
+        botones[1].addActionListener(e -> mostrarMenuMultijugador(frame));
+        botones[2].addActionListener(e -> mostrarOpciones(frame));
     }
 
     private void iniciarJuego(JFrame frame) {
-        if (musicaFondo != null && musicaFondo.isRunning()) { // Detiene la música si está sonando.
-            musicaFondo.stop();
-        }
-
-        // Crea y muestra el panel del juego.
-        JuegoPanel juego = new JuegoPanel(musicaActivada); // Pasa el estado de la música al panel del juego.
-        frame.setContentPane(juego); // Cambia el contenido de la ventana.
-        frame.revalidate(); // Refresca la ventana.
-        frame.repaint(); // Redibuja la ventana.
-        juego.requestFocusInWindow(); // Asegura el enfoque en el panel del juego.
+        detenerMusica();
+        JuegoPanel juego = new JuegoPanel(musicaActivada);
+        frame.setContentPane(juego);
+        frame.revalidate();
+        frame.repaint();
+        juego.requestFocusInWindow();
     }
 
-    //Muestra el panel de opciones para activar/desactivar la música.
-    private void mostrarOpciones(JFrame frame) {
-        JPanel panelOpciones = new JPanel() { // Crea un panel de opciones.
-            protected void paintComponent(Graphics g) { // Dibuja el fondo.
-                super.paintComponent(g);
-                g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this);
-            }
-        };
-        panelOpciones.setLayout(new GridBagLayout()); // Centra los componentes.
+    private void mostrarMenuMultijugador(JFrame frame) {
+        JPanel panel = crearPanelConFondo();
+        panel.setLayout(new GridBagLayout());
 
-        JCheckBox musicaCheckBox = new JCheckBox("Activar música"); // Casilla para controlar la música.
-        musicaCheckBox.setSelected(musicaActivada); // Establece el estado inicial.
-        musicaCheckBox.addItemListener(e -> { // Controla el estado de la música.
-            if (musicaCheckBox.isSelected()) activarMusica();
-            else detenerMusica();
-        });
-        musicaCheckBox.setFont(new Font("Arial", Font.BOLD, 30)); // Texto más grande
-        GridBagConstraints gbc = new GridBagConstraints(); // Configura el diseño del panel.
+        JButton host = new JButton("Crear sala (Servidor + Cliente)");
+        JButton join = new JButton("Unirse a sala (Solo Cliente)");
+        JButton back = new JButton("Volver");
+
+        host.addActionListener(e -> iniciarSalaComoHost(frame));
+        join.addActionListener(e -> iniciarSalaComoCliente(frame));
+        back.addActionListener(e -> volverAlMenu(frame));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panelOpciones.add(musicaCheckBox, gbc); // Añade la casilla al panel.
+        panel.add(host, gbc);
+        gbc.gridy++;
+        panel.add(join, gbc);
+        gbc.gridy++;
+        panel.add(back, gbc);
 
-        JButton cerrarButton = new JButton("Cerrar Opciones"); // Botón para volver al menú.
-        cerrarButton.setPreferredSize(new Dimension(200, 60)); // Dimensiones más grandes
-        cerrarButton.setFont(new Font("Arial", Font.BOLD, 20)); // Texto más grande
-        cerrarButton.addActionListener(e -> {
-            if (musicaActivada && (musicaFondo != null && !musicaFondo.isRunning())) {
-                activarMusica(); // Reactiva la música si está activada.
-            }
-            frame.setContentPane(this); // Vuelve al menú principal.
-            frame.revalidate();
-            frame.repaint();
-        });
-
-        gbc.gridy = 1; // Posiciona el botón debajo de la casilla.
-        panelOpciones.add(cerrarButton, gbc);
-
-        frame.setContentPane(panelOpciones); // Cambia al panel de opciones.
+        frame.setContentPane(panel);
         frame.revalidate();
         frame.repaint();
     }
 
-    //Carga la música de fondo del archivo.
+    private void iniciarSalaComoHost(JFrame frame) {
+        Server.ensureRunning();
+        String username = pedirUsername();
+        String localIp = obtenerIpLocal();
+        JOptionPane.showMessageDialog(frame, "Servidor creado. Pasale esta IP al otro jugador: " + localIp + "\nPuerto UDP: 5555");
+        MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, "127.0.0.1", username);
+        frame.setContentPane(lobby);
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private void iniciarSalaComoCliente(JFrame frame) {
+        String ip = JOptionPane.showInputDialog(frame, "IP del servidor (ej: 192.168.1.20):", "");
+        if (ip == null || ip.isBlank()) {
+            return;
+        }
+
+        String username = pedirUsername();
+        MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, ip.trim(), username);
+        frame.setContentPane(lobby);
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private String pedirUsername() {
+        String username = JOptionPane.showInputDialog(this, "Tu nombre:", "Jugador");
+        if (username == null || username.isBlank()) {
+            return "Jugador" + (int) (Math.random() * 1000);
+        }
+        return username.trim();
+    }
+
+    private String obtenerIpLocal() {
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            return "No disponible";
+        }
+    }
+
+    private JPanel crearPanelConFondo() {
+        return new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (fondo != null) {
+                    g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this);
+                } else {
+                    g.setColor(new Color(30, 30, 40));
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+    }
+
+    private void mostrarOpciones(JFrame frame) {
+        JPanel panelOpciones = crearPanelConFondo();
+        panelOpciones.setLayout(new GridBagLayout());
+
+        JCheckBox musicaCheckBox = new JCheckBox("Activar música");
+        musicaCheckBox.setSelected(musicaActivada);
+        musicaCheckBox.addItemListener(e -> {
+            if (musicaCheckBox.isSelected()) {
+                activarMusica();
+            } else {
+                detenerMusica();
+            }
+        });
+
+        JButton cerrarButton = new JButton("Cerrar Opciones");
+        cerrarButton.addActionListener(e -> volverAlMenu(frame));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panelOpciones.add(musicaCheckBox, gbc);
+        gbc.gridy = 1;
+        panelOpciones.add(cerrarButton, gbc);
+
+        frame.setContentPane(panelOpciones);
+        frame.revalidate();
+        frame.repaint();
+    }
+
+    private void volverAlMenu(JFrame frame) {
+        frame.setContentPane(this);
+        frame.revalidate();
+        frame.repaint();
+        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
+            cargarMusicaFondo();
+        }
+    }
+
     private void cargarMusicaFondo() {
         try {
-            if (musicaFondo == null) { // Carga la música solo si no ha sido cargada.
-                File musicaArchivo = new File("C:/JAVA/juegojava/src/Resources/Juego 35.wav");
-                if (!musicaArchivo.exists()) { // Verifica si el archivo existe.
-                    JOptionPane.showMessageDialog(this, "El archivo de música no se encuentra.", "Error de música", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
-                musicaFondo = AudioSystem.getClip();
-                musicaFondo.open(audioStream);
-
-                if (musicaActivada) activarMusica(); // Activa la música si está activada.
+            if (musicaFondo != null && musicaFondo.isRunning()) {
+                musicaFondo.stop();
             }
-        } catch (Exception e) { // Maneja errores al cargar la música.
-            JOptionPane.showMessageDialog(this, "Error al cargar la música: " + e.getMessage(), "Error de música", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
+            File musicaArchivo = ResourceLoader.findFile("Resources/Juego 35.wav");
+            if (musicaArchivo == null) {
+                musicaActivada = false;
+                return;
+            }
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
+            musicaFondo = AudioSystem.getClip();
+            musicaFondo.open(audioStream);
+            musicaFondo.loop(Clip.LOOP_CONTINUOUSLY);
+            musicaActivada = true;
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            musicaActivada = false;
         }
     }
 
-    //Activa y reproduce la música de fondo en bucle.
     private void activarMusica() {
-        if (musicaFondo != null && !musicaFondo.isRunning()) {
-            musicaFondo.setFramePosition(0); // Reinicia el audio.
-            musicaFondo.start();
-            musicaFondo.loop(Clip.LOOP_CONTINUOUSLY); // Reproduce en bucle.
-            musicaActivada = true; // Marca la música como activada.
-        }
+        musicaActivada = true;
+        cargarMusicaFondo();
     }
 
-    // Detiene la música de fondo.
     private void detenerMusica() {
-        if (musicaFondo != null && musicaFondo.isRunning()) musicaFondo.stop();
-        musicaActivada = false; // Marca la música como desactivada.
-    }
-
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        g.drawImage(fondo, 0, 0, getWidth(), getHeight(), this);
+        musicaActivada = false;
+        if (musicaFondo != null && musicaFondo.isRunning()) {
+            musicaFondo.stop();
+        }
     }
 }
