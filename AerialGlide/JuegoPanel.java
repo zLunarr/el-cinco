@@ -109,7 +109,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
 
-        JButton volverButton = crearBotonPausa("VOLVER", null, 500, 120);
+        JButton volverButton = crearBotonPausa("VOLVER", "Resources/imgvolver.com", 500, 120);
         JButton opcionesButton = crearBotonPausa("OPCIONES", "Resources/option_button.png", 500, 120);
 
         volverButton.addActionListener(e -> volverAlMenu());
@@ -138,7 +138,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         musicaCheck.setSelected(musicaActivada);
         musicaCheck.addActionListener(e -> cambiarMusica(musicaCheck.isSelected()));
 
-        JButton volverPausa = crearBotonPausa("VOLVER", null, 420, 100);
+        JButton volverPausa = crearBotonPausa("VOLVER", "Resources/imgvolver.com", 420, 100);
         volverPausa.addActionListener(e -> {
             opcionesPanel.setVisible(false);
             pausaPanel.setVisible(true);
