@@ -46,6 +46,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private boolean localAlive;
     private boolean remoteAlive;
     private boolean roundOver;
+    private boolean localDefeatPending;
+    private long deadlineResolverDerrotaMs;
 
     private final JPanel pausaPanel;
     private final JPanel opcionesPanel;
@@ -84,6 +86,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         this.pausaPanel = crearPanelPausa();
         this.opcionesPanel = crearPanelOpciones();
+        pausaPanel.setBounds(520, 220, 560, 500);
+        opcionesPanel.setBounds(520, 220, 560, 380);
 
         add(estadoRonda);
         add(esperandoRevanchaLabel);
@@ -102,7 +106,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         JButton revanchaButton = crearBotonConImagen("REVANCHA", "Resources/imgreiniciar.png", 500, 120);
 
         volverButton.addActionListener(e -> volverAlMenuPrincipal());
-        opcionesButton.addActionListener(e -> mostrarSoloPanel(opcionesPanel));
+        opcionesButton.addActionListener(e -> {
+            if (roundOver) {
+                mostrarSoloPanel(opcionesPanel);
+            }
+        });
         revanchaButton.addActionListener(e -> pedirRevancha());
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -144,7 +152,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         volumenSlider.addChangeListener(e -> volumenPorcentaje = volumenSlider.getValue());
 
         JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 420, 100);
-        volverButton.addActionListener(e -> mostrarSoloPanel(pausaPanel));
+        volverButton.addActionListener(e -> {
+            if (roundOver) {
+                mostrarSoloPanel(pausaPanel);
+            }
+        });
 
         GridBagConstraints marcoGbc = new GridBagConstraints();
         marcoGbc.gridx = 0;
@@ -190,14 +202,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     }
 
     private void mostrarSoloPanel(JPanel panelVisible) {
-        boolean mostrarPausa = panelVisible == pausaPanel;
-        boolean mostrarOpciones = panelVisible == opcionesPanel;
-
-        pausaPanel.setVisible(mostrarPausa);
-        opcionesPanel.setVisible(mostrarOpciones);
-
-        setComponentZOrder(opcionesPanel, 0);
-        setComponentZOrder(pausaPanel, 1);
+        pausaPanel.setVisible(panelVisible == pausaPanel);
+        opcionesPanel.setVisible(panelVisible == opcionesPanel);
         requestFocusInWindow();
         repaint();
     }
@@ -218,6 +224,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         localRematchRequested = true;
         client.sendRematchRequest();
+        esperandoRevanchaLabel.setText("Esperando respuesta...");
         esperandoRevanchaLabel.setVisible(true);
 
         if (remoteRematchRequested) {
@@ -229,8 +236,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     private void reiniciarRonda() {
         obstaculos.clear();
-        localPlayer = new Personaje(180, 250);
-        remotePlayer = new Personaje(500, 250);
+        localPlayer = new Personaje(180, 250, "Resources/bird.png", null);
+        remotePlayer = new Personaje(500, 250, "Resources/bird2.png", new Color(70, 150, 255, 120));
 
         localScore = 0;
         remoteScore = 0;
@@ -239,6 +246,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         localAlive = true;
         remoteAlive = true;
         roundOver = false;
+        localDefeatPending = false;
 
         localRematchRequested = false;
         remoteRematchRequested = false;
@@ -267,7 +275,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             return;
         }
 
-        localPlayer.update(getHeight());
+        if (localAlive) {
+            localPlayer.update(getHeight());
+        }
 
         for (Obstaculos obstaculo : obstaculos) {
             obstaculo.mover(10);
@@ -281,23 +291,29 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             client.sendObstacleSpawn(alturaObstaculoSuperior);
         }
 
-        for (Obstaculos obstaculo : obstaculos) {
-            if (localPlayer.getBounds().intersects(obstaculo.getBounds())) {
-                localAlive = false;
-                client.sendState(localPlayer.getY(), localScore, false);
-                finalizarRonda("Perdiste");
-                repaint();
-                return;
-            }
+        if (localAlive) {
+            for (Obstaculos obstaculo : obstaculos) {
+                if (localPlayer.getBounds().intersects(obstaculo.getBounds())) {
+                    localAlive = false;
+                    localDefeatPending = true;
+                    deadlineResolverDerrotaMs = System.currentTimeMillis() + 350;
+                    client.sendState(localPlayer.getY(), getHeight(), localScore, false);
+                    break;
+                }
 
-            if (obstaculo.getY() > 0 && !obstaculo.isPuntuado()
-                    && localPlayer.getBounds().x > obstaculo.getX() + obstaculo.getWidth()) {
-                obstaculo.marcarPuntuado();
-                localScore++;
+                if (obstaculo.getY() > 0 && !obstaculo.isPuntuado()
+                        && localPlayer.getBounds().x > obstaculo.getX() + obstaculo.getWidth()) {
+                    obstaculo.marcarPuntuado();
+                    localScore++;
+                }
             }
         }
 
-        client.sendState(localPlayer.getY(), localScore, localAlive);
+        if (localDefeatPending && !roundOver && System.currentTimeMillis() >= deadlineResolverDerrotaMs) {
+            finalizarRonda(remoteAlive ? "Perdiste" : "Empate");
+        }
+
+        client.sendState(localPlayer.getY(), getHeight(), localScore, localAlive);
         repaint();
     }
 
@@ -335,17 +351,27 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         String[] parts = message.split("\\$");
         switch (parts[0]) {
             case "jump" -> {
-                if (!roundOver) {
+                if (!roundOver && remoteAlive) {
                     remotePlayer.jump();
                 }
             }
             case "state" -> {
-                if (parts.length >= 4) {
-                    remotePlayer.setY(Integer.parseInt(parts[1]));
-                    remoteScore = Integer.parseInt(parts[2]);
-                    remoteAlive = Boolean.parseBoolean(parts[3]);
+                if (parts.length >= 5) {
+                    int yRecibida = Integer.parseInt(parts[1]);
+                    int altoPanelRemoto = Integer.parseInt(parts[2]);
+                    remoteScore = Integer.parseInt(parts[3]);
+                    remoteAlive = Boolean.parseBoolean(parts[4]);
+
+                    int altoLocal = Math.max(1, getHeight());
+                    int yEscalada = altoPanelRemoto <= 0 ? yRecibida : (int) Math.round((yRecibida / (double) altoPanelRemoto) * altoLocal);
+                    remotePlayer.setY(yEscalada);
+
                     if (!remoteAlive && !roundOver) {
-                        finalizarRonda(localAlive ? "Ganaste" : "Empate");
+                        if (!localAlive || localDefeatPending) {
+                            finalizarRonda("Empate");
+                        } else {
+                            finalizarRonda("Ganaste");
+                        }
                     }
                 }
             }
