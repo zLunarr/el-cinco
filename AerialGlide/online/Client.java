@@ -51,8 +51,8 @@ public class Client extends Thread {
         sendMessage("connect$" + username);
     }
 
-    public void sendState(int y, int score, boolean alive) {
-        sendMessage("state$" + y + "$" + score + "$" + alive);
+    public void sendState(int y, int panelHeight, int score, boolean alive) {
+        sendMessage("state$" + y + "$" + panelHeight + "$" + score + "$" + alive);
     }
 
     public void sendJump() {
