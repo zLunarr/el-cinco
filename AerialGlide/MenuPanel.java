@@ -67,6 +67,10 @@ class MenuPanel extends JPanel {
         return boton;
     }
 
+    private Image escalarImagen(Image image, int ancho, int alto) {
+        return image.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+    }
+
     private void agregarEventos(JFrame frame, JButton[] botones) {
         botones[0].addActionListener(e -> iniciarJuego(frame));
         botones[1].addActionListener(e -> mostrarMenuMultijugador(frame));
@@ -191,6 +195,18 @@ class MenuPanel extends JPanel {
         frame.setContentPane(panelOpciones);
         frame.revalidate();
         frame.repaint();
+        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
+            cargarMusicaFondo();
+        }
+    }
+
+    private void volverAlMenu(JFrame frame) {
+        frame.setContentPane(this);
+        frame.revalidate();
+        frame.repaint();
+        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
+            cargarMusicaFondo();
+        }
     }
 
     private void volverAlMenu(JFrame frame) {
