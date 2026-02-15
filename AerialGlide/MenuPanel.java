@@ -56,7 +56,7 @@ class MenuPanel extends JPanel {
         gbc.gridy = 0;
 
         if (titulo != null) {
-            JLabel tituloLabel = new JLabel(new ImageIcon(escalarImagen(titulo, 480, 220)));
+            JLabel tituloLabel = new JLabel(new ImageIcon(titulo.getScaledInstance(480, 220, Image.SCALE_SMOOTH)));
             add(tituloLabel, gbc);
             gbc.gridy++;
         }
@@ -73,7 +73,7 @@ class MenuPanel extends JPanel {
 
         if (image != null) {
             boton.setText("");
-            boton.setIcon(new ImageIcon(escalarImagen(image, ancho, alto)));
+            boton.setIcon(new ImageIcon(image.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH)));
         }
 
         boton.setPreferredSize(new Dimension(ancho, alto));
@@ -83,10 +83,6 @@ class MenuPanel extends JPanel {
         boton.setFocusPainted(false);
         boton.setBorder(BorderFactory.createEmptyBorder());
         return boton;
-    }
-
-    private Image escalarImagen(Image image, int ancho, int alto) {
-        return image.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
     }
 
     private JButton crearBotonSecundario(String texto) {
