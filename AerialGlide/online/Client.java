@@ -63,6 +63,14 @@ public class Client extends Thread {
         sendMessage("disconnect");
     }
 
+    public void sendObstacleSpawn(int alturaObstaculoSuperior) {
+        sendMessage("spawn$" + alturaObstaculoSuperior);
+    }
+
+    public void sendRematchRequest() {
+        sendMessage("rematch_request");
+    }
+
     private void sendMessage(String message) {
         byte[] data = message.getBytes();
         DatagramPacket packet = new DatagramPacket(data, data.length, ipServer, serverPort);
