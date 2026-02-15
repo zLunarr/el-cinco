@@ -10,13 +10,11 @@ public class Ejecucion {
         // Crear el panel del menú de inicio
         MenuPanel menuPanel = new MenuPanel(frame);
 
-        // Configuración de ventana completa sin bordes
-        frame.setUndecorated(true);
+        // Agregar el panel del menú a la ventana
         frame.add(menuPanel);
         frame.setPreferredSize(new Dimension(800, 600));
         frame.pack(); // Ajusta el tamaño de la ventana a la del panel
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        frame.setIconImage(ResourceLoader.loadImage("Resources/icono.jpg"));
         // Título de la ventana
         frame.setTitle("Aerial Glide - Menú de Inicio");
         // Cerrar la aplicación al salir

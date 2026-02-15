@@ -80,7 +80,7 @@ public class MultiplayerLobbyPanel extends JPanel {
         pollTimer.stop();
         reconnectTimer.stop();
 
-        OnlineGamePanel panel = new OnlineGamePanel(client, players);
+        OnlineGamePanel panel = new OnlineGamePanel(frame, client, players);
         frame.setContentPane(panel);
         frame.revalidate();
         frame.repaint();
