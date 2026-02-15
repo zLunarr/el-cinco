@@ -7,16 +7,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
-import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -31,9 +23,6 @@ import online.Server;
 class MenuPanel extends JPanel {
     private final Image fondo;
     private final Image titulo;
-    private Clip musicaFondo;
-    private boolean musicaActivada = true;
-    private int volumenPorcentaje = 70;
 
     public MenuPanel(JFrame frame) {
         setLayout(new GridBagLayout());
@@ -41,7 +30,7 @@ class MenuPanel extends JPanel {
         fondo = ResourceLoader.loadImage("Resources/background.png");
         titulo = ResourceLoader.loadImage("Resources/menu_title.png");
 
-        cargarMusicaFondo();
+        AudioManager.playMainLoop();
 
         JButton jugarButton = crearBotonConImagen("Jugar", "Resources/play_button.png", 420, 120);
         Dimension tamanoOnline = calcularTamanoPorTexto("ONLINE", "OPCIONES", 420, 120);
@@ -109,8 +98,7 @@ class MenuPanel extends JPanel {
     }
 
     private void iniciarJuego(JFrame frame) {
-        pausarMusicaMenu();
-        JuegoPanel juego = new JuegoPanel(frame, musicaActivada);
+        JuegoPanel juego = new JuegoPanel(frame);
         frame.setContentPane(juego);
         frame.revalidate();
         frame.repaint();
@@ -237,34 +225,45 @@ class MenuPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(255, 255, 255, 210), 3),
                 BorderFactory.createEmptyBorder(18, 28, 18, 28)));
 
-        JCheckBox musicaCheckBox = new JCheckBox("Activar música");
+        JCheckBox musicaCheckBox = new JCheckBox("Activar sonido");
         musicaCheckBox.setOpaque(false);
         musicaCheckBox.setContentAreaFilled(false);
         musicaCheckBox.setBorderPainted(false);
         musicaCheckBox.setForeground(Color.WHITE);
         musicaCheckBox.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 28));
-        musicaCheckBox.setSelected(musicaActivada);
+        musicaCheckBox.setSelected(AudioManager.isSoundEnabled());
         musicaCheckBox.addItemListener(e -> {
             if (musicaCheckBox.isSelected()) {
-                activarMusica();
+                AudioManager.setSoundEnabled(true);
             } else {
-                detenerMusica();
+                AudioManager.setSoundEnabled(false);
             }
+        });
+
+        JButton activarSonido = crearBotonSecundario("Activar sonido");
+        activarSonido.addActionListener(e -> {
+            musicaCheckBox.setSelected(true);
+            AudioManager.setSoundEnabled(true);
+        });
+
+        JButton desactivarSonido = crearBotonSecundario("Desactivar sonido");
+        desactivarSonido.addActionListener(e -> {
+            musicaCheckBox.setSelected(false);
+            AudioManager.setSoundEnabled(false);
         });
 
         JLabel volumenLabel = new JLabel("Volumen");
         volumenLabel.setForeground(new Color(205, 240, 255));
         volumenLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
 
-        JSlider volumenSlider = new JSlider(0, 100, volumenPorcentaje);
+        JSlider volumenSlider = new JSlider(0, 100, AudioManager.getVolumePercent());
         volumenSlider.setOpaque(false);
         volumenSlider.setMajorTickSpacing(25);
         volumenSlider.setPaintTicks(false);
         volumenSlider.setPaintLabels(false);
         volumenSlider.setForeground(Color.WHITE);
         volumenSlider.addChangeListener(e -> {
-            volumenPorcentaje = volumenSlider.getValue();
-            aplicarVolumen();
+            AudioManager.setVolumePercent(volumenSlider.getValue());
         });
 
         Dimension tamanoVolver = calcularTamanoPorTexto("VOLVER", "OPCIONES", 420, 120);
@@ -279,9 +278,15 @@ class MenuPanel extends JPanel {
         marcoOpciones.add(musicaCheckBox, marcoGbc);
 
         marcoGbc.gridy = 1;
-        marcoOpciones.add(volumenLabel, marcoGbc);
+        marcoOpciones.add(activarSonido, marcoGbc);
 
         marcoGbc.gridy = 2;
+        marcoOpciones.add(desactivarSonido, marcoGbc);
+
+        marcoGbc.gridy = 3;
+        marcoOpciones.add(volumenLabel, marcoGbc);
+
+        marcoGbc.gridy = 4;
         marcoGbc.fill = GridBagConstraints.HORIZONTAL;
         marcoGbc.weightx = 1.0;
         marcoOpciones.add(volumenSlider, marcoGbc);
@@ -298,19 +303,14 @@ class MenuPanel extends JPanel {
         frame.setContentPane(panelOpciones);
         frame.revalidate();
         frame.repaint();
-        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
-            cargarMusicaFondo();
-        }
-        aplicarVolumen();
+        AudioManager.playMainLoop();
     }
 
     private void volverAlMenuPrincipal(JFrame frame) {
         frame.setContentPane(this);
         frame.revalidate();
         frame.repaint();
-        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
-            cargarMusicaFondo();
-        }
+        AudioManager.playMainLoop();
     }
 
     private Dimension calcularTamanoPorTexto(String textoObjetivo, String textoReferencia, int anchoBase, int altoBase) {
@@ -323,58 +323,4 @@ class MenuPanel extends JPanel {
         return new Dimension(ancho, alto);
     }
 
-    private void cargarMusicaFondo() {
-        try {
-            if (musicaFondo != null && musicaFondo.isRunning()) {
-                musicaFondo.stop();
-            }
-            File musicaArchivo = ResourceLoader.findFile("Resources/Juego 35.wav");
-            if (musicaArchivo == null) {
-                musicaActivada = false;
-                return;
-            }
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
-            musicaFondo = AudioSystem.getClip();
-            musicaFondo.open(audioStream);
-            musicaFondo.loop(Clip.LOOP_CONTINUOUSLY);
-            aplicarVolumen();
-            musicaActivada = true;
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-            musicaActivada = false;
-        }
-    }
-
-
-    private void aplicarVolumen() {
-        if (musicaFondo == null || !musicaFondo.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-            return;
-        }
-        FloatControl control = (FloatControl) musicaFondo.getControl(FloatControl.Type.MASTER_GAIN);
-        if (!musicaActivada || volumenPorcentaje <= 0) {
-            control.setValue(control.getMinimum());
-            return;
-        }
-        float min = control.getMinimum();
-        float max = control.getMaximum();
-        float gain = min + (max - min) * (volumenPorcentaje / 100f);
-        control.setValue(Math.max(min, Math.min(max, gain)));
-    }
-
-    private void pausarMusicaMenu() {
-        if (musicaFondo != null && musicaFondo.isRunning()) {
-            musicaFondo.stop();
-        }
-    }
-
-    private void activarMusica() {
-        musicaActivada = true;
-        cargarMusicaFondo();
-    }
-
-    private void detenerMusica() {
-        musicaActivada = false;
-        if (musicaFondo != null && musicaFondo.isRunning()) {
-            musicaFondo.stop();
-        }
-    }
 }

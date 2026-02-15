@@ -191,6 +191,10 @@ public class Server extends Thread {
             return;
         }
 
+        if (!roundOver) {
+            return;
+        }
+
         playerReady[playerIndex] = true;
         stateDirty = true;
 
@@ -198,7 +202,7 @@ public class Server extends Thread {
             resetRound();
             playerReady[0] = true;
             playerReady[1] = true;
-            pingEveryone("start$" + peers.get(0).username + "$" + peers.get(1).username);
+            stateDirty = true;
         }
     }
 
