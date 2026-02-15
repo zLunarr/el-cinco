@@ -73,9 +73,11 @@ public class Server extends Thread {
     private final boolean[] playerAlive;
     private final int[] playerScore;
     private final boolean[] jumpQueued;
+    private final boolean[] playerReady;
 
     private int tickCounter;
     private boolean roundOver;
+    private int roundResult;
     private boolean stateDirty;
 
     public Server() {
@@ -86,6 +88,7 @@ public class Server extends Thread {
         this.playerAlive = new boolean[]{true, true};
         this.playerScore = new int[]{0, 0};
         this.jumpQueued = new boolean[]{false, false};
+        this.playerReady = new boolean[]{false, false};
 
         try {
             this.socket = new DatagramSocket(PORT);
@@ -150,6 +153,7 @@ public class Server extends Thread {
                 pingEveryone("waiting");
             }
             case "jump" -> jumpQueued[sender] = true;
+            case "ready" -> onPlayerReady(sender);
             default -> {
             }
         }
@@ -177,7 +181,29 @@ public class Server extends Thread {
         }
 
         resetRound();
+        playerReady[0] = true;
+        playerReady[1] = true;
         pingEveryone("start$" + peers.get(0).username + "$" + peers.get(1).username);
+    }
+
+    private void onPlayerReady(int playerIndex) {
+        if (playerIndex < 0 || playerIndex >= playerReady.length || peers.size() < 2) {
+            return;
+        }
+
+        playerReady[playerIndex] = true;
+        stateDirty = true;
+
+        if (allPlayersReady()) {
+            resetRound();
+            playerReady[0] = true;
+            playerReady[1] = true;
+            pingEveryone("start$" + peers.get(0).username + "$" + peers.get(1).username);
+        }
+    }
+
+    private boolean allPlayersReady() {
+        return playerReady[0] && playerReady[1];
     }
 
     private synchronized void updateGameTick() {
@@ -185,7 +211,7 @@ public class Server extends Thread {
             return;
         }
 
-        if (!roundOver) {
+        if (!roundOver && allPlayersReady()) {
             tickCounter++;
             applyPlayerPhysics(0);
             applyPlayerPhysics(1);
@@ -198,6 +224,13 @@ public class Server extends Thread {
             evaluateScoresAndCollisions();
             if (!playerAlive[0] || !playerAlive[1]) {
                 roundOver = true;
+                if (!playerAlive[0] && !playerAlive[1]) {
+                    roundResult = 3;
+                } else if (playerAlive[0]) {
+                    roundResult = 1;
+                } else {
+                    roundResult = 2;
+                }
             }
         }
 
@@ -310,6 +343,7 @@ public class Server extends Thread {
         StringBuilder builder = new StringBuilder("server_state");
         builder.append('$').append(WORLD_HEIGHT);
         builder.append('$').append(roundOver);
+        builder.append('$').append(roundResult);
 
         for (int i = 0; i < 2; i++) {
             builder.append('$').append(playerY[i]);
@@ -317,6 +351,9 @@ public class Server extends Thread {
             builder.append('$').append(playerAlive[i]);
             builder.append('$').append(playerScore[i]);
         }
+
+        builder.append('$').append(playerReady[0]);
+        builder.append('$').append(playerReady[1]);
 
         builder.append('$').append(obstacles.size());
         for (ObstaclePair obstacle : obstacles) {
@@ -340,8 +377,11 @@ public class Server extends Thread {
         playerScore[1] = 0;
         jumpQueued[0] = false;
         jumpQueued[1] = false;
+        playerReady[0] = false;
+        playerReady[1] = false;
         tickCounter = 0;
         roundOver = false;
+        roundResult = 0;
         stateDirty = true;
     }
 
