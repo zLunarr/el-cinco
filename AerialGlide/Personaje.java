@@ -17,10 +17,18 @@ public class Personaje {
     private final int gravedad = 1;
 
     public Personaje(int x, int y) {
+        this(x, y, "Resources/bird.png", null);
+    }
+
+    public Personaje(int x, int y, String rutaImagen, Color tinte) {
         this.x = x;
         this.y = y;
         this.velocidad = 0;
-        this.imagen = ResourceLoader.loadImage("Resources/bird.png");
+        Image sprite = ResourceLoader.loadImage(rutaImagen);
+        if (sprite == null && !"Resources/bird.png".equals(rutaImagen)) {
+            sprite = ResourceLoader.loadImage("Resources/bird.png");
+        }
+        this.imagen = sprite;
     }
 
     public void update(int panelHeight) {

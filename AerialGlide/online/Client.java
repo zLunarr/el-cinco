@@ -51,8 +51,8 @@ public class Client extends Thread {
         sendMessage("connect$" + username);
     }
 
-    public void sendState(int y, int score, boolean alive) {
-        sendMessage("state$" + y + "$" + score + "$" + alive);
+    public void sendState(int y, int panelHeight, int score, boolean alive) {
+        sendMessage("state$" + y + "$" + panelHeight + "$" + score + "$" + alive);
     }
 
     public void sendJump() {
@@ -61,6 +61,14 @@ public class Client extends Thread {
 
     public void sendDisconnect() {
         sendMessage("disconnect");
+    }
+
+    public void sendObstacleSpawn(int alturaObstaculoSuperior) {
+        sendMessage("spawn$" + alturaObstaculoSuperior);
+    }
+
+    public void sendRematchRequest() {
+        sendMessage("rematch_request");
     }
 
     private void sendMessage(String message) {
