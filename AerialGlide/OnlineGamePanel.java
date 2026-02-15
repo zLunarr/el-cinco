@@ -26,6 +26,8 @@ import online.Client;
 
 public class OnlineGamePanel extends JPanel implements ActionListener, KeyListener {
     private static final int ANCHO_OBSTACULO = 120;
+    private static final int PLAYER_SPAWN_X = 220;
+    private static final int PLAYER_SPAWN_Y = 250;
 
     private final JFrame frame;
     private final Client client;
@@ -56,6 +58,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     private boolean localRematchRequested;
     private boolean remoteRematchRequested;
+    private long ultimoPingRevanchaMs;
     private int volumenPorcentaje = 70;
 
     public OnlineGamePanel(JFrame frame, Client client, String[] players, boolean hostAutoritativo) {
@@ -224,10 +227,12 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         localRematchRequested = true;
         client.sendRematchRequest();
+        ultimoPingRevanchaMs = System.currentTimeMillis();
         esperandoRevanchaLabel.setText("Esperando respuesta...");
         esperandoRevanchaLabel.setVisible(true);
 
-        if (remoteRematchRequested) {
+        if (remoteRematchRequested && hostAutoritativo) {
+            client.sendRestartRound();
             reiniciarRonda();
         }
         requestFocusInWindow();
@@ -239,11 +244,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         String skinHost = "Resources/bird.png";
         String skinCliente = "Resources/bird2.png";
         if (hostAutoritativo) {
-            localPlayer = new Personaje(180, 250, skinHost);
-            remotePlayer = new Personaje(500, 250, skinCliente);
+            localPlayer = new Personaje(PLAYER_SPAWN_X, PLAYER_SPAWN_Y, skinHost);
+            remotePlayer = new Personaje(PLAYER_SPAWN_X, PLAYER_SPAWN_Y, skinCliente);
         } else {
-            localPlayer = new Personaje(180, 250, skinCliente);
-            remotePlayer = new Personaje(500, 250, skinHost);
+            localPlayer = new Personaje(PLAYER_SPAWN_X, PLAYER_SPAWN_Y, skinCliente);
+            remotePlayer = new Personaje(PLAYER_SPAWN_X, PLAYER_SPAWN_Y, skinHost);
         }
 
         localScore = 0;
@@ -257,6 +262,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         localRematchRequested = false;
         remoteRematchRequested = false;
+        ultimoPingRevanchaMs = 0L;
 
         estadoRonda.setVisible(false);
         esperandoRevanchaLabel.setVisible(false);
@@ -277,7 +283,19 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             processMessage(message);
         }
 
-        if (roundOver || getWidth() <= 0 || getHeight() <= 0) {
+        if (roundOver) {
+            if (localRematchRequested && !remoteRematchRequested) {
+                long ahora = System.currentTimeMillis();
+                if (ahora - ultimoPingRevanchaMs >= 500) {
+                    client.sendRematchRequest();
+                    ultimoPingRevanchaMs = ahora;
+                }
+            }
+            repaint();
+            return;
+        }
+
+        if (getWidth() <= 0 || getHeight() <= 0) {
             repaint();
             return;
         }
@@ -395,10 +413,12 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                             : "Tu rival pidió revancha");
                     esperandoRevanchaLabel.setVisible(true);
                 }
-                if (localRematchRequested && remoteRematchRequested) {
+                if (localRematchRequested && remoteRematchRequested && hostAutoritativo) {
+                    client.sendRestartRound();
                     reiniciarRonda();
                 }
             }
+            case "restart_round" -> reiniciarRonda();
             case "disconnect" -> {
                 remoteAlive = false;
                 if (!roundOver) {

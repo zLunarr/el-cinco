@@ -71,6 +71,10 @@ public class Client extends Thread {
         sendMessage("rematch_request");
     }
 
+    public void sendRestartRound() {
+        sendMessage("restart_round");
+    }
+
     private void sendMessage(String message) {
         byte[] data = message.getBytes();
         DatagramPacket packet = new DatagramPacket(data, data.length, ipServer, serverPort);
