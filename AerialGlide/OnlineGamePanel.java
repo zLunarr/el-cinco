@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -55,7 +56,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private final JPanel pausaPanel;
     private final JPanel opcionesPanel;
     private final JLabel estadoRonda;
-    private int volumenPorcentaje = 70;
+    private JCheckBox sonidoCheckBox;
     private final JLabel estadoReady;
     private boolean localReady;
     private boolean remoteReady;
@@ -89,6 +90,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         this.pausaPanel = crearPanelPausa();
         this.opcionesPanel = crearPanelOpciones();
+
+        AudioManager.playMainLoop();
 
         add(estadoRonda);
         add(estadoReady);
@@ -148,17 +151,32 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                 BorderFactory.createLineBorder(new Color(255, 255, 255, 210), 3),
                 BorderFactory.createEmptyBorder(18, 28, 18, 28)));
 
+        sonidoCheckBox = new JCheckBox("Activar sonido");
+        sonidoCheckBox.setOpaque(false);
+        sonidoCheckBox.setContentAreaFilled(false);
+        sonidoCheckBox.setBorderPainted(false);
+        sonidoCheckBox.setForeground(Color.WHITE);
+        sonidoCheckBox.setFont(new Font("Arial", Font.BOLD, 28));
+        sonidoCheckBox.setSelected(AudioManager.isSoundEnabled());
+        sonidoCheckBox.addActionListener(e -> cambiarSonido(sonidoCheckBox.isSelected()));
+
+        JButton activarSonido = crearBotonConImagen("Activar sonido", null, 420, 80);
+        activarSonido.addActionListener(e -> cambiarSonido(true));
+
+        JButton desactivarSonido = crearBotonConImagen("Desactivar sonido", null, 420, 80);
+        desactivarSonido.addActionListener(e -> cambiarSonido(false));
+
         JLabel volumenLabel = new JLabel("Volumen");
         volumenLabel.setForeground(new Color(205, 240, 255));
         volumenLabel.setFont(new Font("Arial", Font.BOLD, 24));
 
-        JSlider volumenSlider = new JSlider(0, 100, volumenPorcentaje);
+        JSlider volumenSlider = new JSlider(0, 100, AudioManager.getVolumePercent());
         volumenSlider.setOpaque(false);
         volumenSlider.setMajorTickSpacing(25);
         volumenSlider.setPaintTicks(false);
         volumenSlider.setPaintLabels(false);
         volumenSlider.setForeground(Color.WHITE);
-        volumenSlider.addChangeListener(e -> volumenPorcentaje = volumenSlider.getValue());
+        volumenSlider.addChangeListener(e -> AudioManager.setVolumePercent(volumenSlider.getValue()));
 
         JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 420, 100);
         volverButton.addActionListener(e -> {
@@ -170,11 +188,20 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         GridBagConstraints marcoGbc = new GridBagConstraints();
         marcoGbc.gridx = 0;
         marcoGbc.gridy = 0;
+        marcoOpciones.add(sonidoCheckBox, marcoGbc);
+
+        marcoGbc.gridy = 1;
+        marcoOpciones.add(activarSonido, marcoGbc);
+
+        marcoGbc.gridy = 2;
+        marcoOpciones.add(desactivarSonido, marcoGbc);
+
+        marcoGbc.gridy = 3;
         marcoGbc.insets = new Insets(8, 8, 8, 8);
         marcoGbc.anchor = GridBagConstraints.CENTER;
         marcoOpciones.add(volumenLabel, marcoGbc);
 
-        marcoGbc.gridy = 1;
+        marcoGbc.gridy = 4;
         marcoGbc.fill = GridBagConstraints.HORIZONTAL;
         marcoGbc.weightx = 1.0;
         marcoOpciones.add(volumenSlider, marcoGbc);
@@ -221,6 +248,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         timer.stop();
         client.sendDisconnect();
         client.finish();
+        AudioManager.playMainLoop();
         frame.setContentPane(new MenuPanel(frame));
         frame.revalidate();
         frame.repaint();
@@ -251,9 +279,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         }
 
         if (localReady && remoteReady) {
-            estadoReady.setText("Ambos listos. Iniciando nueva ronda...");
+            estadoReady.setVisible(false);
+            estadoReady.setText("");
+            return;
         } else if (localReady) {
-            estadoReady.setText("Esperando a que el otro jugador presione Reiniciar...");
+            estadoReady.setText("Esperando respuesta...");
         } else {
             estadoReady.setText("Tu rival está listo para reiniciar.");
         }
@@ -306,6 +336,13 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         requestFocusInWindow();
         repaint();
+    }
+
+    private void cambiarSonido(boolean activar) {
+        if (sonidoCheckBox != null) {
+            sonidoCheckBox.setSelected(activar);
+        }
+        AudioManager.setSoundEnabled(activar);
     }
 
     @Override
