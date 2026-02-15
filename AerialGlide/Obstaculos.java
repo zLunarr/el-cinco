@@ -11,6 +11,7 @@ public class Obstaculos {
     private final int width;
     private final int height;
     private final Image imagen;
+    private boolean puntuado;
 
     public Obstaculos(int x, int y, int width, int height, String rutaImagen) {
         this.x = x;
@@ -22,6 +23,26 @@ public class Obstaculos {
 
     public void mover(int velocidad) {
         x -= velocidad;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public boolean isPuntuado() {
+        return puntuado;
+    }
+
+    public void marcarPuntuado() {
+        puntuado = true;
     }
 
     public boolean fueraDePantalla() {
