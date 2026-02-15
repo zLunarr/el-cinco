@@ -188,8 +188,16 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         pausaPanel.setEnabled(mostrarPausa);
         opcionesPanel.setEnabled(mostrarOpciones);
 
+        for (java.awt.Component component : pausaPanel.getComponents()) {
+            component.setVisible(mostrarPausa);
+        }
+        for (java.awt.Component component : opcionesPanel.getComponents()) {
+            component.setVisible(mostrarOpciones);
+        }
+
         setComponentZOrder(opcionesPanel, 0);
         setComponentZOrder(pausaPanel, 1);
+        revalidate();
         repaint();
     }
 
