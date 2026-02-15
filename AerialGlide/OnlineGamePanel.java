@@ -40,32 +40,29 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     private int localScore;
     private int remoteScore;
-    private int contadorTiempo;
 
     private final String[] players;
     private final boolean hostAutoritativo;
+    private final String serverIp;
+    private final String username;
 
     private boolean localAlive;
     private boolean remoteAlive;
     private boolean roundOver;
-    private boolean localDefeatPending;
-    private long deadlineResolverDerrotaMs;
 
     private final JPanel pausaPanel;
     private final JPanel opcionesPanel;
     private final JLabel estadoRonda;
-    private final JLabel esperandoRevanchaLabel;
-
-    private boolean localRematchRequested;
-    private boolean remoteRematchRequested;
-    private long ultimoPingRevanchaMs;
     private int volumenPorcentaje = 70;
 
-    public OnlineGamePanel(JFrame frame, Client client, String[] players, boolean hostAutoritativo) {
+    public OnlineGamePanel(JFrame frame, Client client, String[] players, boolean hostAutoritativo, String serverIp,
+            String username) {
         this.frame = frame;
         this.client = client;
         this.players = players;
         this.hostAutoritativo = hostAutoritativo;
+        this.serverIp = serverIp;
+        this.username = username;
         this.fondo = ResourceLoader.loadImage("Resources/fondo juego.jpg");
 
         this.obstaculos = new ArrayList<>();
@@ -81,23 +78,16 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         estadoRonda.setForeground(Color.WHITE);
         estadoRonda.setVisible(false);
 
-        this.esperandoRevanchaLabel = new JLabel("Esperando respuesta...", SwingConstants.CENTER);
-        esperandoRevanchaLabel.setBounds(0, 220, 1600, 80);
-        esperandoRevanchaLabel.setFont(new Font("Arial", Font.BOLD, 46));
-        esperandoRevanchaLabel.setForeground(new Color(255, 240, 120));
-        esperandoRevanchaLabel.setVisible(false);
-
         this.pausaPanel = crearPanelPausa();
         this.opcionesPanel = crearPanelOpciones();
         pausaPanel.setBounds(520, 220, 560, 500);
         opcionesPanel.setBounds(520, 220, 560, 380);
 
         add(estadoRonda);
-        add(esperandoRevanchaLabel);
         add(pausaPanel);
         add(opcionesPanel);
 
-        reiniciarRonda();
+        reiniciarEstadoLocal();
     }
 
     private JPanel crearPanelPausa() {
@@ -106,7 +96,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 500, 120);
         JButton opcionesButton = crearBotonConImagen("OPCIONES", "Resources/option_button.png", 500, 120);
-        JButton revanchaButton = crearBotonConImagen("REVANCHA", "Resources/imgreiniciar.png", 500, 120);
+        JButton reiniciarButton = crearBotonConImagen("REINICIAR", "Resources/imgreiniciar.png", 500, 120);
 
         volverButton.addActionListener(e -> volverAlMenuPrincipal());
         opcionesButton.addActionListener(e -> {
@@ -114,7 +104,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                 mostrarSoloPanel(opcionesPanel);
             }
         });
-        revanchaButton.addActionListener(e -> pedirRevancha());
+        reiniciarButton.addActionListener(e -> reiniciarBusquedaOnline());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -126,7 +116,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         panel.add(opcionesButton, gbc);
 
         gbc.gridy = 2;
-        panel.add(revanchaButton, gbc);
+        panel.add(reiniciarButton, gbc);
 
         panel.setVisible(false);
         return panel;
@@ -220,28 +210,18 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         frame.repaint();
     }
 
-    private void pedirRevancha() {
-        if (!roundOver || localRematchRequested) {
-            return;
-        }
+    private void reiniciarBusquedaOnline() {
+        timer.stop();
+        client.sendDisconnect();
+        client.finish();
 
-        localRematchRequested = true;
-        client.sendRematchRequest();
-        ultimoPingRevanchaMs = System.currentTimeMillis();
-        esperandoRevanchaLabel.setText("Esperando respuesta...");
-        esperandoRevanchaLabel.setVisible(true);
-
-        if (remoteRematchRequested) {
-            if (hostAutoritativo) {
-                client.sendRestartRound();
-            }
-            reiniciarRonda();
-        }
-        requestFocusInWindow();
-        repaint();
+        MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, serverIp, username);
+        frame.setContentPane(lobby);
+        frame.revalidate();
+        frame.repaint();
     }
 
-    private void reiniciarRonda() {
+    private void reiniciarEstadoLocal() {
         obstaculos.clear();
         String skinHost = "Resources/bird.png";
         String skinCliente = "Resources/bird2.png";
@@ -255,19 +235,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         localScore = 0;
         remoteScore = 0;
-        contadorTiempo = 0;
-
         localAlive = true;
         remoteAlive = true;
         roundOver = false;
-        localDefeatPending = false;
-
-        localRematchRequested = false;
-        remoteRematchRequested = false;
-        ultimoPingRevanchaMs = 0L;
 
         estadoRonda.setVisible(false);
-        esperandoRevanchaLabel.setVisible(false);
         mostrarSoloPanel(null);
 
         if (!timer.isRunning()) {
@@ -285,82 +257,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             processMessage(message);
         }
 
-        if (roundOver) {
-            if (localRematchRequested && !remoteRematchRequested) {
-                long ahora = System.currentTimeMillis();
-                if (ahora - ultimoPingRevanchaMs >= 500) {
-                    client.sendRematchRequest();
-                    ultimoPingRevanchaMs = ahora;
-                }
-            }
-            repaint();
-            return;
-        }
-
-        if (getWidth() <= 0 || getHeight() <= 0) {
-            repaint();
-            return;
-        }
-
-        if (localAlive) {
-            localPlayer.update(getHeight());
-        }
-
-        for (Obstaculos obstaculo : obstaculos) {
-            obstaculo.mover(10);
-        }
-        obstaculos.removeIf(Obstaculos::fueraDePantalla);
-
-        contadorTiempo++;
-        if (hostAutoritativo && contadorTiempo % 80 == 0) {
-            int alturaObstaculoSuperior = calcularAlturaObstaculoSuperior();
-            generarObstaculos(alturaObstaculoSuperior);
-            client.sendObstacleSpawn(alturaObstaculoSuperior);
-        }
-
-        if (localAlive) {
-            for (Obstaculos obstaculo : obstaculos) {
-                if (localPlayer.getBounds().intersects(obstaculo.getBounds())) {
-                    localAlive = false;
-                    localDefeatPending = true;
-                    deadlineResolverDerrotaMs = System.currentTimeMillis() + 350;
-                    client.sendState(localPlayer.getY(), getHeight(), localScore, false);
-                    break;
-                }
-
-                if (obstaculo.getY() > 0 && !obstaculo.isPuntuado()
-                        && localPlayer.getBounds().x > obstaculo.getX() + obstaculo.getWidth()) {
-                    obstaculo.marcarPuntuado();
-                    localScore++;
-                }
-            }
-        }
-
-        if (localDefeatPending && !roundOver && System.currentTimeMillis() >= deadlineResolverDerrotaMs) {
-            finalizarRonda(remoteAlive ? construirMensajeDerrota() : construirMensajeEmpate());
-        }
-
-        client.sendState(localPlayer.getY(), getHeight(), localScore, localAlive);
         repaint();
-    }
-
-    private int calcularAlturaObstaculoSuperior() {
-        int alturaVentana = getHeight();
-        int espacioVertical = 210;
-        int maxAlturaSuperior = Math.max(1, alturaVentana - espacioVertical - 120);
-        return (int) (Math.random() * maxAlturaSuperior) + 60;
-    }
-
-    private void generarObstaculos(int alturaObstaculoSuperior) {
-        int alturaVentana = getHeight();
-        int espacioVertical = 210;
-        int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
-
-        obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
-                "Resources/obstacle - copia.png"));
-
-        obstaculos.add(new Obstaculos(getWidth(), alturaObstaculoSuperior + espacioVertical, ANCHO_OBSTACULO,
-                alturaInferior, "Resources/obstacle.png"));
     }
 
     private void finalizarRonda(String estado) {
@@ -368,7 +265,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             return;
         }
         roundOver = true;
-        timer.stop();
         estadoRonda.setText(estado);
         estadoRonda.setVisible(true);
         mostrarSoloPanel(pausaPanel);
@@ -389,52 +285,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private void processMessage(String message) {
         String[] parts = message.split("\\$");
         switch (parts[0]) {
-            case "jump" -> {
-                if (!roundOver && remoteAlive) {
-                    remotePlayer.jump();
-                }
-            }
-            case "state" -> {
-                if (parts.length >= 5) {
-                    int yRecibida = Integer.parseInt(parts[1]);
-                    int altoPanelRemoto = Integer.parseInt(parts[2]);
-                    remoteScore = Integer.parseInt(parts[3]);
-                    remoteAlive = Boolean.parseBoolean(parts[4]);
-
-                    int altoLocal = Math.max(1, getHeight());
-                    int yEscalada = altoPanelRemoto <= 0 ? yRecibida : (int) Math.round((yRecibida / (double) altoPanelRemoto) * altoLocal);
-                    remotePlayer.setY(yEscalada);
-
-                    if (!remoteAlive && !roundOver) {
-                        if (!localAlive || localDefeatPending) {
-                            finalizarRonda(construirMensajeEmpate());
-                        } else {
-                            finalizarRonda(construirMensajeVictoria());
-                        }
-                    }
-                }
-            }
-            case "spawn" -> {
-                if (!hostAutoritativo && parts.length >= 2 && !roundOver) {
-                    generarObstaculos(Integer.parseInt(parts[1]));
-                }
-            }
-            case "rematch_request" -> {
-                remoteRematchRequested = true;
-                if (roundOver) {
-                    esperandoRevanchaLabel.setText(localRematchRequested
-                            ? "Esperando respuesta..."
-                            : "Tu rival pidió revancha");
-                    esperandoRevanchaLabel.setVisible(true);
-                }
-                if (localRematchRequested && remoteRematchRequested) {
-                    if (hostAutoritativo) {
-                        client.sendRestartRound();
-                    }
-                    reiniciarRonda();
-                }
-            }
-            case "restart_round" -> reiniciarRonda();
+            case "server_state" -> aplicarEstadoServidor(parts);
             case "disconnect" -> {
                 remoteAlive = false;
                 if (!roundOver) {
@@ -444,6 +295,96 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             default -> {
             }
         }
+    }
+
+    private void aplicarEstadoServidor(String[] parts) {
+        if (parts.length < 12) {
+            return;
+        }
+
+        int remoteWorldHeight = Integer.parseInt(parts[1]);
+        boolean serverRoundOver = Boolean.parseBoolean(parts[2]);
+
+        int localIndex = hostAutoritativo ? 0 : 1;
+        int p1Y = Integer.parseInt(parts[3]);
+        boolean p1Alive = Boolean.parseBoolean(parts[5]);
+        int p1Score = Integer.parseInt(parts[6]);
+
+        int p2Y = Integer.parseInt(parts[7]);
+        boolean p2Alive = Boolean.parseBoolean(parts[9]);
+        int p2Score = Integer.parseInt(parts[10]);
+
+        int altoLocal = Math.max(1, getHeight());
+        int yP1Escalada = escalarY(p1Y, remoteWorldHeight, altoLocal);
+        int yP2Escalada = escalarY(p2Y, remoteWorldHeight, altoLocal);
+
+        if (localIndex == 0) {
+            localPlayer.setY(yP1Escalada);
+            remotePlayer.setY(yP2Escalada);
+            localAlive = p1Alive;
+            remoteAlive = p2Alive;
+            localScore = p1Score;
+            remoteScore = p2Score;
+        } else {
+            localPlayer.setY(yP2Escalada);
+            remotePlayer.setY(yP1Escalada);
+            localAlive = p2Alive;
+            remoteAlive = p1Alive;
+            localScore = p2Score;
+            remoteScore = p1Score;
+        }
+
+        sincronizarObstaculos(parts, 11, remoteWorldHeight, altoLocal);
+
+        if (serverRoundOver && !roundOver) {
+            if (!localAlive && !remoteAlive) {
+                finalizarRonda(construirMensajeEmpate());
+            } else if (!localAlive) {
+                finalizarRonda(construirMensajeDerrota());
+            } else {
+                finalizarRonda(construirMensajeVictoria());
+            }
+        }
+    }
+
+    private void sincronizarObstaculos(String[] parts, int startIndex, int remoteWorldHeight, int altoLocal) {
+        int obstacleCount = Integer.parseInt(parts[startIndex]);
+        int expectedLength = startIndex + 1 + (obstacleCount * 4);
+        if (parts.length < expectedLength) {
+            return;
+        }
+
+        obstaculos.clear();
+        int idx = startIndex + 1;
+        for (int i = 0; i < obstacleCount; i++) {
+            int x = Integer.parseInt(parts[idx++]);
+            int topHeight = Integer.parseInt(parts[idx++]);
+            int bottomY = Integer.parseInt(parts[idx++]);
+            int bottomHeight = Integer.parseInt(parts[idx++]);
+
+            int topHeightScaled = escalarDistancia(topHeight, remoteWorldHeight, altoLocal);
+            int bottomYScaled = escalarY(bottomY, remoteWorldHeight, altoLocal);
+            int bottomHeightScaled = escalarDistancia(bottomHeight, remoteWorldHeight, altoLocal);
+
+            obstaculos.add(new Obstaculos(x, 0, ANCHO_OBSTACULO, Math.max(1, topHeightScaled),
+                    "Resources/obstacle - copia.png"));
+            obstaculos.add(new Obstaculos(x, bottomYScaled, ANCHO_OBSTACULO, Math.max(1, bottomHeightScaled),
+                    "Resources/obstacle.png"));
+        }
+    }
+
+    private int escalarY(int yRemota, int altoRemoto, int altoLocal) {
+        if (altoRemoto <= 0) {
+            return yRemota;
+        }
+        return (int) Math.round((yRemota / (double) altoRemoto) * altoLocal);
+    }
+
+    private int escalarDistancia(int distanciaRemota, int altoRemoto, int altoLocal) {
+        if (altoRemoto <= 0) {
+            return distanciaRemota;
+        }
+        return (int) Math.round((distanciaRemota / (double) altoRemoto) * altoLocal);
     }
 
     @Override
@@ -474,7 +415,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     @Override
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_SPACE && !roundOver && timer.isRunning()) {
-            localPlayer.jump();
             client.sendJump();
         }
     }

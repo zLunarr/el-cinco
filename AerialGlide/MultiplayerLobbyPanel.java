@@ -12,6 +12,7 @@ import online.Client;
 public class MultiplayerLobbyPanel extends JPanel {
     private final JFrame frame;
     private final Client client;
+    private final String serverIp;
     private final JLabel estado;
     private final Timer pollTimer;
     private final Timer reconnectTimer;
@@ -23,6 +24,7 @@ public class MultiplayerLobbyPanel extends JPanel {
 
     public MultiplayerLobbyPanel(JFrame frame, String serverIp, String username) {
         this.frame = frame;
+        this.serverIp = serverIp;
         this.username = username;
         this.estado = new JLabel("Esperando respuesta del servidor...", SwingConstants.CENTER);
         this.estado.setFont(new Font("Arial", Font.BOLD, 32));
@@ -83,7 +85,7 @@ public class MultiplayerLobbyPanel extends JPanel {
         reconnectTimer.stop();
 
         boolean soyHost = playerNumber == 1 || (playerNumber == 0 && username.equals(players[0]));
-        OnlineGamePanel panel = new OnlineGamePanel(frame, client, players, soyHost);
+        OnlineGamePanel panel = new OnlineGamePanel(frame, client, players, soyHost, serverIp, username);
         frame.setContentPane(panel);
         frame.revalidate();
         frame.repaint();
