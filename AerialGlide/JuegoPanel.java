@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.BorderFactory;
@@ -30,6 +31,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JSlider;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
@@ -51,7 +53,8 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
     private final JPanel pausaPanel;
     private final JPanel opcionesPanel;
-    private final JCheckBox musicaCheckBox;
+    private JCheckBox musicaCheckBox;
+    private int volumenPorcentaje = 70;
 
     private Clip musicaFondo;
     private boolean musicaActivada;
@@ -88,7 +91,6 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
         pausaPanel = crearPanelPausa();
         opcionesPanel = crearPanelOpciones();
-        musicaCheckBox = (JCheckBox) opcionesPanel.getComponent(0);
 
         add(mensajePerder);
         add(botonReiniciar);
@@ -131,12 +133,33 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(new Color(0, 0, 0, 180));
 
-        JCheckBox musicaCheck = new JCheckBox("Activar música");
-        musicaCheck.setOpaque(false);
-        musicaCheck.setForeground(Color.WHITE);
-        musicaCheck.setFont(new Font("Arial", Font.BOLD, 28));
-        musicaCheck.setSelected(musicaActivada);
-        musicaCheck.addActionListener(e -> cambiarMusica(musicaCheck.isSelected()));
+        JPanel marcoOpciones = new JPanel(new GridBagLayout());
+        marcoOpciones.setBackground(new Color(25, 25, 35, 210));
+        marcoOpciones.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 220), 3),
+                BorderFactory.createEmptyBorder(18, 28, 18, 28)));
+
+        musicaCheckBox = new JCheckBox("Activar música");
+        musicaCheckBox.setOpaque(false);
+        musicaCheckBox.setForeground(Color.WHITE);
+        musicaCheckBox.setFont(new Font("Arial", Font.BOLD, 28));
+        musicaCheckBox.setSelected(musicaActivada);
+        musicaCheckBox.addActionListener(e -> cambiarMusica(musicaCheckBox.isSelected()));
+
+        JLabel volumenLabel = new JLabel("Volumen");
+        volumenLabel.setForeground(Color.WHITE);
+        volumenLabel.setFont(new Font("Arial", Font.BOLD, 24));
+
+        JSlider volumenSlider = new JSlider(0, 100, volumenPorcentaje);
+        volumenSlider.setOpaque(false);
+        volumenSlider.setMajorTickSpacing(25);
+        volumenSlider.setPaintTicks(true);
+        volumenSlider.setPaintLabels(true);
+        volumenSlider.setForeground(Color.WHITE);
+        volumenSlider.addChangeListener(e -> {
+            volumenPorcentaje = volumenSlider.getValue();
+            aplicarVolumen();
+        });
 
         JButton volverPausa = crearBotonPausa("VOLVER", "Resources/imgvolver.png", 420, 100);
         volverPausa.addActionListener(e -> {
@@ -144,11 +167,26 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
             requestFocusInWindow();
         });
 
+        GridBagConstraints marcoGbc = new GridBagConstraints();
+        marcoGbc.gridx = 0;
+        marcoGbc.gridy = 0;
+        marcoGbc.insets = new Insets(8, 8, 8, 8);
+        marcoGbc.anchor = GridBagConstraints.CENTER;
+        marcoOpciones.add(musicaCheckBox, marcoGbc);
+
+        marcoGbc.gridy = 1;
+        marcoOpciones.add(volumenLabel, marcoGbc);
+
+        marcoGbc.gridy = 2;
+        marcoGbc.fill = GridBagConstraints.HORIZONTAL;
+        marcoGbc.weightx = 1.0;
+        marcoOpciones.add(volumenSlider, marcoGbc);
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.insets = new Insets(12, 12, 12, 12);
-        panel.add(musicaCheck, gbc);
+        panel.add(marcoOpciones, gbc);
         gbc.gridy = 1;
         panel.add(volverPausa, gbc);
 
@@ -264,6 +302,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
                 musicaFondo.setFramePosition(0);
                 musicaFondo.loop(Clip.LOOP_CONTINUOUSLY);
             }
+            aplicarVolumen();
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ignored) {
         }
     }
@@ -278,6 +317,21 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         if (musicaFondo != null) {
             musicaFondo.stop();
         }
+    }
+
+    private void aplicarVolumen() {
+        if (musicaFondo == null || !musicaFondo.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+            return;
+        }
+        FloatControl control = (FloatControl) musicaFondo.getControl(FloatControl.Type.MASTER_GAIN);
+        if (!musicaActivada || volumenPorcentaje <= 0) {
+            control.setValue(control.getMinimum());
+            return;
+        }
+        float min = control.getMinimum();
+        float max = control.getMaximum();
+        float gain = min + (max - min) * (volumenPorcentaje / 100f);
+        control.setValue(Math.max(min, Math.min(max, gain)));
     }
 
     private void cargarHighScore() {
