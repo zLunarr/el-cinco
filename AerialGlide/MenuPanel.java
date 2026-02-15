@@ -44,7 +44,7 @@ class MenuPanel extends JPanel {
         cargarMusicaFondo();
 
         JButton jugarButton = crearBotonConImagen("Jugar", "Resources/play_button.png", 420, 120);
-        JButton multijugadorButton = crearBotonConImagen("Multijugador", "Resources/select_character.png", 420, 120);
+        JButton multijugadorButton = crearBotonConImagen("Multijugador", "Resources/imgonline.png", 420, 120);
         JButton opcionesButton = crearBotonConImagen("Opciones", "Resources/option_button.png", 420, 120);
 
         JButton[] botones = {jugarButton, multijugadorButton, opcionesButton};
@@ -89,6 +89,21 @@ class MenuPanel extends JPanel {
         return image.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
     }
 
+    private JButton crearBotonSecundario(String texto) {
+        JButton boton = new JButton(texto);
+        boton.setPreferredSize(new Dimension(360, 60));
+        boton.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 28));
+        boton.setForeground(Color.WHITE);
+        boton.setBackground(new Color(0, 75, 120, 190));
+        boton.setFocusPainted(false);
+        boton.setBorder(BorderFactory.createLineBorder(new Color(190, 235, 255, 220), 2));
+        return boton;
+    }
+
+    private Image escalarImagen(Image image, int ancho, int alto) {
+        return image.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+    }
+
     private void agregarEventos(JFrame frame, JButton[] botones) {
         botones[0].addActionListener(e -> iniciarJuego(frame));
         botones[1].addActionListener(e -> mostrarMenuMultijugador(frame));
@@ -108,22 +123,36 @@ class MenuPanel extends JPanel {
         JPanel panel = crearPanelConFondo();
         panel.setLayout(new GridBagLayout());
 
-        JButton host = new JButton("Crear sala (Servidor + Cliente)");
-        JButton join = new JButton("Unirse a sala (Solo Cliente)");
-        JButton back = new JButton("Volver");
+        JPanel marco = new JPanel(new GridBagLayout());
+        marco.setOpaque(false);
+        marco.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 220), 3),
+                BorderFactory.createEmptyBorder(20, 30, 20, 30)));
+
+        JButton host = crearBotonSecundario("Crear sala");
+        JButton join = crearBotonSecundario("Unirse a sala");
+        JButton back = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 320, 100);
 
         host.addActionListener(e -> iniciarSalaComoHost(frame));
         join.addActionListener(e -> iniciarSalaComoCliente(frame));
         back.addActionListener(e -> volverAlMenuPrincipal(frame));
 
+        GridBagConstraints marcoGbc = new GridBagConstraints();
+        marcoGbc.insets = new Insets(8, 8, 8, 8);
+        marcoGbc.gridx = 0;
+        marcoGbc.gridy = 0;
+        marcoGbc.fill = GridBagConstraints.HORIZONTAL;
+        marcoGbc.weightx = 1.0;
+        marco.add(host, marcoGbc);
+        marcoGbc.gridy++;
+        marco.add(join, marcoGbc);
+
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(host, gbc);
-        gbc.gridy++;
-        panel.add(join, gbc);
-        gbc.gridy++;
+        gbc.insets = new Insets(10, 10, 10, 10);
+        panel.add(marco, gbc);
+        gbc.gridy = 1;
         panel.add(back, gbc);
 
         frame.setContentPane(panel);

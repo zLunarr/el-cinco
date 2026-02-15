@@ -81,12 +81,9 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         mensajePerder.setBounds(0, 120, 1600, 80);
         mensajePerder.setVisible(false);
 
-        botonReiniciar = new JButton("Reiniciar Juego");
-        botonReiniciar.setFont(new Font("Arial", Font.BOLD, 40));
-        botonReiniciar.setBackground(Color.WHITE);
-        botonReiniciar.setForeground(Color.BLACK);
+        botonReiniciar = crearBotonPausa("REINICIAR", "Resources/imgreiniciar.png", 500, 120);
         botonReiniciar.addActionListener(e -> reiniciarJuego());
-        botonReiniciar.setBounds(560, 230, 500, 80);
+        botonReiniciar.setBounds(560, 230, 500, 120);
         botonReiniciar.setVisible(false);
 
         pausaPanel = crearPanelPausa();
