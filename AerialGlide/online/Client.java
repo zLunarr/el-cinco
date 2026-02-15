@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Client extends Thread {
+    private final String serverIpText;
     private final InetAddress ipServer;
     private final int serverPort;
     private final DatagramSocket socket;
@@ -17,6 +18,7 @@ public class Client extends Thread {
 
     public Client(String serverIp, int serverPort) {
         try {
+            this.serverIpText = serverIp;
             this.ipServer = InetAddress.getByName(serverIp);
             this.serverPort = serverPort;
             this.socket = new DatagramSocket();
@@ -51,10 +53,6 @@ public class Client extends Thread {
         sendMessage("connect$" + username);
     }
 
-    public void sendState(int y, int panelHeight, int score, boolean alive) {
-        sendMessage("state$" + y + "$" + panelHeight + "$" + score + "$" + alive);
-    }
-
     public void sendJump() {
         sendMessage("jump");
     }
@@ -63,16 +61,8 @@ public class Client extends Thread {
         sendMessage("disconnect");
     }
 
-    public void sendObstacleSpawn(int alturaObstaculoSuperior) {
-        sendMessage("spawn$" + alturaObstaculoSuperior);
-    }
-
-    public void sendRematchRequest() {
-        sendMessage("rematch_request");
-    }
-
-    public void sendRestartRound() {
-        sendMessage("restart_round");
+    public String getServerIp() {
+        return serverIpText;
     }
 
     private void sendMessage(String message) {
