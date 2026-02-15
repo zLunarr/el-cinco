@@ -235,6 +235,15 @@ class MenuPanel extends JPanel {
         }
     }
 
+    private void volverAlMenu(JFrame frame) {
+        frame.setContentPane(this);
+        frame.revalidate();
+        frame.repaint();
+        if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
+            cargarMusicaFondo();
+        }
+    }
+
     private void cargarMusicaFondo() {
         try {
             if (musicaFondo != null && musicaFondo.isRunning()) {
