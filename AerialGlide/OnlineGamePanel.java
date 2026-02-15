@@ -10,6 +10,8 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
@@ -54,6 +56,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private final JPanel opcionesPanel;
     private final JLabel estadoRonda;
     private int volumenPorcentaje = 70;
+    private final JLabel estadoReady;
+    private boolean localReady;
+    private boolean remoteReady;
 
     public OnlineGamePanel(JFrame frame, Client client, String[] players, boolean hostAutoritativo, String serverIp,
             String username) {
@@ -73,21 +78,32 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         setLayout(null);
 
         this.estadoRonda = new JLabel("", SwingConstants.CENTER);
-        estadoRonda.setBounds(0, 120, 1600, 80);
         estadoRonda.setFont(new Font("Arial", Font.BOLD, 64));
         estadoRonda.setForeground(Color.WHITE);
         estadoRonda.setVisible(false);
 
+        this.estadoReady = new JLabel("", SwingConstants.CENTER);
+        estadoReady.setFont(new Font("Arial", Font.BOLD, 38));
+        estadoReady.setForeground(Color.WHITE);
+        estadoReady.setVisible(false);
+
         this.pausaPanel = crearPanelPausa();
         this.opcionesPanel = crearPanelOpciones();
-        pausaPanel.setBounds(520, 220, 560, 500);
-        opcionesPanel.setBounds(520, 220, 560, 380);
 
         add(estadoRonda);
+        add(estadoReady);
         add(pausaPanel);
         add(opcionesPanel);
 
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                actualizarLayoutMenus();
+            }
+        });
+
         reiniciarEstadoLocal();
+        actualizarLayoutMenus();
     }
 
     private JPanel crearPanelPausa() {
@@ -104,7 +120,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                 mostrarSoloPanel(opcionesPanel);
             }
         });
-        reiniciarButton.addActionListener(e -> reiniciarBusquedaOnline());
+        reiniciarButton.addActionListener(e -> marcarListoParaReiniciar());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -210,15 +226,54 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         frame.repaint();
     }
 
-    private void reiniciarBusquedaOnline() {
-        timer.stop();
-        client.sendDisconnect();
-        client.finish();
+    private void marcarListoParaReiniciar() {
+        if (!roundOver || localReady) {
+            return;
+        }
 
-        MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, serverIp, username);
-        frame.setContentPane(lobby);
-        frame.revalidate();
-        frame.repaint();
+        localReady = true;
+        client.sendReady();
+        actualizarEstadoReady();
+        mostrarSoloPanel(pausaPanel);
+    }
+
+    private void actualizarEstadoReady() {
+        if (!roundOver) {
+            estadoReady.setVisible(false);
+            estadoReady.setText("");
+            return;
+        }
+
+        if (!localReady && !remoteReady) {
+            estadoReady.setVisible(false);
+            estadoReady.setText("");
+            return;
+        }
+
+        if (localReady && remoteReady) {
+            estadoReady.setText("Ambos listos. Iniciando nueva ronda...");
+        } else if (localReady) {
+            estadoReady.setText("Esperando a que el otro jugador presione Reiniciar...");
+        } else {
+            estadoReady.setText("Tu rival está listo para reiniciar.");
+        }
+        estadoReady.setVisible(true);
+    }
+
+    private void actualizarLayoutMenus() {
+        int ancho = Math.max(1, getWidth());
+        int alto = Math.max(1, getHeight());
+
+        estadoRonda.setBounds(0, Math.max(20, alto / 9), ancho, 80);
+        estadoReady.setBounds(0, Math.max(110, (alto / 9) + 80), ancho, 60);
+
+        int pausaAncho = 560;
+        int pausaAlto = 500;
+        int opcionesAncho = 560;
+        int opcionesAlto = 380;
+
+        pausaPanel.setBounds((ancho - pausaAncho) / 2, (alto - pausaAlto) / 2, pausaAncho, pausaAlto);
+        opcionesPanel.setBounds((ancho - opcionesAncho) / 2, (alto - opcionesAlto) / 2, opcionesAncho, opcionesAlto);
     }
 
     private void reiniciarEstadoLocal() {
@@ -238,8 +293,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         localAlive = true;
         remoteAlive = true;
         roundOver = false;
+        localReady = false;
+        remoteReady = false;
 
         estadoRonda.setVisible(false);
+        actualizarEstadoReady();
         mostrarSoloPanel(null);
 
         if (!timer.isRunning()) {
@@ -298,21 +356,22 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     }
 
     private void aplicarEstadoServidor(String[] parts) {
-        if (parts.length < 12) {
+        if (parts.length < 15) {
             return;
         }
 
         int remoteWorldHeight = Integer.parseInt(parts[1]);
         boolean serverRoundOver = Boolean.parseBoolean(parts[2]);
+        int roundResult = Integer.parseInt(parts[3]);
 
         int localIndex = hostAutoritativo ? 0 : 1;
-        int p1Y = Integer.parseInt(parts[3]);
-        boolean p1Alive = Boolean.parseBoolean(parts[5]);
-        int p1Score = Integer.parseInt(parts[6]);
+        int p1Y = Integer.parseInt(parts[4]);
+        boolean p1Alive = Boolean.parseBoolean(parts[6]);
+        int p1Score = Integer.parseInt(parts[7]);
 
-        int p2Y = Integer.parseInt(parts[7]);
-        boolean p2Alive = Boolean.parseBoolean(parts[9]);
-        int p2Score = Integer.parseInt(parts[10]);
+        int p2Y = Integer.parseInt(parts[8]);
+        boolean p2Alive = Boolean.parseBoolean(parts[10]);
+        int p2Score = Integer.parseInt(parts[11]);
 
         int altoLocal = Math.max(1, getHeight());
         int yP1Escalada = escalarY(p1Y, remoteWorldHeight, altoLocal);
@@ -334,17 +393,36 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             remoteScore = p1Score;
         }
 
-        sincronizarObstaculos(parts, 11, remoteWorldHeight, altoLocal);
+        boolean p1Ready = Boolean.parseBoolean(parts[12]);
+        boolean p2Ready = Boolean.parseBoolean(parts[13]);
+
+        if (localIndex == 0) {
+            localReady = p1Ready;
+            remoteReady = p2Ready;
+        } else {
+            localReady = p2Ready;
+            remoteReady = p1Ready;
+        }
+
+        sincronizarObstaculos(parts, 14, remoteWorldHeight, altoLocal);
+
+        if (!serverRoundOver && roundOver && localReady && remoteReady) {
+            reiniciarEstadoLocal();
+            return;
+        }
 
         if (serverRoundOver && !roundOver) {
-            if (!localAlive && !remoteAlive) {
+            int localResult = localIndex == 0 ? roundResult : (roundResult == 1 ? 2 : (roundResult == 2 ? 1 : roundResult));
+            if (localResult == 3) {
                 finalizarRonda(construirMensajeEmpate());
-            } else if (!localAlive) {
-                finalizarRonda(construirMensajeDerrota());
-            } else {
+            } else if (localResult == 1) {
                 finalizarRonda(construirMensajeVictoria());
+            } else if (localResult == 2) {
+                finalizarRonda(construirMensajeDerrota());
             }
         }
+
+        actualizarEstadoReady();
     }
 
     private void sincronizarObstaculos(String[] parts, int startIndex, int remoteWorldHeight, int altoLocal) {

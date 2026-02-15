@@ -61,6 +61,10 @@ public class Client extends Thread {
         sendMessage("disconnect");
     }
 
+    public void sendReady() {
+        sendMessage("ready");
+    }
+
     public String getServerIp() {
         return serverIpText;
     }
