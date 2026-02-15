@@ -118,9 +118,9 @@ class MenuPanel extends JPanel {
     }
 
     private void mostrarMenuMultijugador(JFrame frame) {
-        JPanel panel = new JPanel(new GridBagLayout());
+        JPanel panel = crearPanelConFondo();
+        panel.setLayout(new GridBagLayout());
         Color azulMenuMultijugador = new Color(0, 170, 255);
-        panel.setBackground(azulMenuMultijugador);
 
         JPanel marco = new JPanel(new GridBagLayout());
         marco.setOpaque(true);
