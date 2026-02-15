@@ -18,10 +18,10 @@ public class Personaje {
     private final int gravedad = 1;
 
     public Personaje(int x, int y) {
-        this(x, y, "Resources/bird.png", null);
+        this(x, y, "Resources/bird.png");
     }
 
-    public Personaje(int x, int y, String rutaImagen, Color tinte) {
+    public Personaje(int x, int y, String rutaImagen) {
         this.x = x;
         this.y = y;
         this.velocidad = 0;

@@ -239,11 +239,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         String skinHost = "Resources/bird.png";
         String skinCliente = "Resources/bird2.png";
         if (hostAutoritativo) {
-            localPlayer = new Personaje(180, 250, skinHost, null);
-            remotePlayer = new Personaje(500, 250, skinCliente, null);
+            localPlayer = new Personaje(180, 250, skinHost);
+            remotePlayer = new Personaje(500, 250, skinCliente);
         } else {
-            localPlayer = new Personaje(180, 250, skinCliente, null);
-            remotePlayer = new Personaje(500, 250, skinHost, null);
+            localPlayer = new Personaje(180, 250, skinCliente);
+            remotePlayer = new Personaje(500, 250, skinHost);
         }
 
         localScore = 0;
