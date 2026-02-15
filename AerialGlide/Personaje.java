@@ -30,7 +30,6 @@ public class Personaje {
             sprite = ResourceLoader.loadImage("Resources/bird.png");
         }
         this.imagen = sprite;
-        this.tinte = tinte;
     }
 
     public void update(int panelHeight) {

@@ -63,7 +63,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         this.client = client;
         this.players = players;
         this.hostAutoritativo = hostAutoritativo;
-        this.fondo = ResourceLoader.loadImage("Resources/background.png");
+        this.fondo = ResourceLoader.loadImage("Resources/fondo juego.jpg");
 
         this.obstaculos = new ArrayList<>();
         this.timer = new Timer(20, this);
@@ -236,8 +236,15 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     private void reiniciarRonda() {
         obstaculos.clear();
-        localPlayer = new Personaje(180, 250, "Resources/bird.png", null);
-        remotePlayer = new Personaje(500, 250, "Resources/bird2.png", new Color(70, 150, 255, 120));
+        String skinHost = "Resources/bird.png";
+        String skinCliente = "Resources/bird2.png";
+        if (hostAutoritativo) {
+            localPlayer = new Personaje(180, 250, skinHost, null);
+            remotePlayer = new Personaje(500, 250, skinCliente, null);
+        } else {
+            localPlayer = new Personaje(180, 250, skinCliente, null);
+            remotePlayer = new Personaje(500, 250, skinHost, null);
+        }
 
         localScore = 0;
         remoteScore = 0;

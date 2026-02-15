@@ -82,7 +82,7 @@ public class MultiplayerLobbyPanel extends JPanel {
         pollTimer.stop();
         reconnectTimer.stop();
 
-        boolean soyHost = playerNumber == 1;
+        boolean soyHost = playerNumber == 1 || (playerNumber == 0 && username.equals(players[0]));
         OnlineGamePanel panel = new OnlineGamePanel(frame, client, players, soyHost);
         frame.setContentPane(panel);
         frame.revalidate();
