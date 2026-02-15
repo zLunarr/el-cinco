@@ -118,13 +118,15 @@ class MenuPanel extends JPanel {
     }
 
     private void mostrarMenuMultijugador(JFrame frame) {
-        JPanel panel = crearPanelConFondo();
-        panel.setLayout(new GridBagLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
+        Color azulMenuMultijugador = new Color(0, 170, 255);
+        panel.setBackground(azulMenuMultijugador);
 
         JPanel marco = new JPanel(new GridBagLayout());
-        marco.setOpaque(false);
+        marco.setOpaque(true);
+        marco.setBackground(azulMenuMultijugador);
         marco.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(255, 255, 255, 220), 3),
+                BorderFactory.createLineBorder(azulMenuMultijugador, 3),
                 BorderFactory.createEmptyBorder(20, 30, 20, 30)));
 
         JButton host = crearBotonSecundario("Crear sala");
