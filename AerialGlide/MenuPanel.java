@@ -44,7 +44,9 @@ class MenuPanel extends JPanel {
         cargarMusicaFondo();
 
         JButton jugarButton = crearBotonConImagen("Jugar", "Resources/play_button.png", 420, 120);
-        JButton multijugadorButton = crearBotonConImagen("Multijugador", "Resources/imgonline.png", 420, 120);
+        Dimension tamanoOnline = calcularTamanoPorTexto("ONLINE", "OPCIONES", 420, 120);
+        JButton multijugadorButton = crearBotonConImagen("Multijugador", "Resources/imgonline.png", tamanoOnline.width,
+                tamanoOnline.height);
         JButton opcionesButton = crearBotonConImagen("Opciones", "Resources/option_button.png", 420, 120);
 
         JButton[] botones = {jugarButton, multijugadorButton, opcionesButton};
@@ -116,18 +118,21 @@ class MenuPanel extends JPanel {
     }
 
     private void mostrarMenuMultijugador(JFrame frame) {
-        JPanel panel = crearPanelConFondo();
-        panel.setLayout(new GridBagLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
+        Color azulMenuMultijugador = new Color(0, 170, 255);
+        panel.setBackground(azulMenuMultijugador);
 
         JPanel marco = new JPanel(new GridBagLayout());
-        marco.setOpaque(false);
+        marco.setOpaque(true);
+        marco.setBackground(azulMenuMultijugador);
         marco.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(255, 255, 255, 220), 3),
+                BorderFactory.createLineBorder(azulMenuMultijugador, 3),
                 BorderFactory.createEmptyBorder(20, 30, 20, 30)));
 
         JButton host = crearBotonSecundario("Crear sala");
         JButton join = crearBotonSecundario("Unirse a sala");
-        JButton back = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 320, 100);
+        Dimension tamanoVolver = calcularTamanoPorTexto("VOLVER", "OPCIONES", 420, 120);
+        JButton back = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", tamanoVolver.width, tamanoVolver.height);
 
         host.addActionListener(e -> iniciarSalaComoHost(frame));
         join.addActionListener(e -> iniciarSalaComoCliente(frame));
@@ -262,7 +267,8 @@ class MenuPanel extends JPanel {
             aplicarVolumen();
         });
 
-        JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 320, 100);
+        Dimension tamanoVolver = calcularTamanoPorTexto("VOLVER", "OPCIONES", 420, 120);
+        JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", tamanoVolver.width, tamanoVolver.height);
         volverButton.addActionListener(e -> volverAlMenuPrincipal(frame));
 
         GridBagConstraints marcoGbc = new GridBagConstraints();
@@ -305,6 +311,16 @@ class MenuPanel extends JPanel {
         if (musicaActivada && (musicaFondo == null || !musicaFondo.isRunning())) {
             cargarMusicaFondo();
         }
+    }
+
+    private Dimension calcularTamanoPorTexto(String textoObjetivo, String textoReferencia, int anchoBase, int altoBase) {
+        if (textoObjetivo == null || textoObjetivo.isBlank() || textoReferencia == null || textoReferencia.isBlank()) {
+            return new Dimension(anchoBase, altoBase);
+        }
+        double proporcion = (double) textoObjetivo.length() / textoReferencia.length();
+        int ancho = (int) Math.round(anchoBase * proporcion);
+        int alto = (int) Math.round(altoBase * proporcion);
+        return new Dimension(ancho, alto);
     }
 
     private void cargarMusicaFondo() {
