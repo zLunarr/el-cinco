@@ -11,6 +11,8 @@ public class Personaje {
     private int velocidad;
     private final int ancho = 90;
     private final int alto = 90;
+    private static final int HITBOX_MARGIN_X = 18;
+    private static final int HITBOX_MARGIN_Y = 14;
     private final Image imagen;
     private final int gravedad = 1;
 
@@ -54,7 +56,11 @@ public class Personaje {
     }
 
     public Rectangle getBounds() {
-        return new Rectangle(x, y, ancho, alto);
+        int hitboxX = x + HITBOX_MARGIN_X;
+        int hitboxY = y + HITBOX_MARGIN_Y;
+        int hitboxWidth = Math.max(1, ancho - (HITBOX_MARGIN_X * 2));
+        int hitboxHeight = Math.max(1, alto - (HITBOX_MARGIN_Y * 2));
+        return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
     }
 
     public int getY() {
