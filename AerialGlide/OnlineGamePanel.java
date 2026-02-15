@@ -9,25 +9,25 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
+import java.util.ArrayList;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import online.Client;
 
 public class OnlineGamePanel extends JPanel implements ActionListener, KeyListener {
-    private final JFrame frame;
+    private static final int ANCHO_OBSTACULO = 120;
+
     private final Client client;
     private final Timer timer;
 
     private final Personaje localPlayer;
     private final Personaje remotePlayer;
-    private final Image fondo;
+    private final ArrayList<Obstaculos> obstaculos;
 
     private int localScore;
     private int remoteScore;
+    private int contadorTiempo;
     private boolean remoteAlive;
     private boolean sessionEnded;
     private final String[] players;
@@ -41,6 +41,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         this.players = players;
         this.localPlayer = new Personaje(180, 250);
         this.remotePlayer = new Personaje(500, 250);
+        this.obstaculos = new ArrayList<>();
         this.remoteAlive = true;
         this.sessionEnded = false;
         this.fondo = ResourceLoader.loadImage("Resources/fondo juego.jpg");
@@ -69,11 +70,38 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (!sessionEnded) {
-            localPlayer.update(getHeight());
-            localScore++;
-            client.sendState(localPlayer.getY(), localScore, true);
+        if (getWidth() <= 0 || getHeight() <= 0) {
+            return;
         }
+
+        localPlayer.update(getHeight());
+
+        for (Obstaculos obstaculo : obstaculos) {
+            obstaculo.mover(10);
+        }
+        obstaculos.removeIf(Obstaculos::fueraDePantalla);
+
+        contadorTiempo++;
+        if (contadorTiempo % 80 == 0) {
+            generarObstaculos();
+        }
+
+        for (Obstaculos obstaculo : obstaculos) {
+            if (localPlayer.getBounds().intersects(obstaculo.getBounds())) {
+                timer.stop();
+                client.sendState(localPlayer.getY(), localScore, false);
+                repaint();
+                return;
+            }
+
+            if (obstaculo.getY() > 0 && !obstaculo.isPuntuado()
+                    && localPlayer.getBounds().x > obstaculo.getX() + obstaculo.getWidth()) {
+                obstaculo.marcarPuntuado();
+                localScore++;
+            }
+        }
+
+        client.sendState(localPlayer.getY(), localScore, true);
 
         String message;
         while ((message = client.pollMessage()) != null) {
@@ -81,6 +109,20 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         }
 
         repaint();
+    }
+
+    private void generarObstaculos() {
+        int alturaVentana = getHeight();
+        int espacioVertical = 210;
+        int maxAlturaSuperior = Math.max(1, alturaVentana - espacioVertical - 120);
+        int alturaObstaculoSuperior = (int) (Math.random() * maxAlturaSuperior) + 60;
+
+        obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
+                "Resources/obstacle - copia.png"));
+
+        obstaculos.add(new Obstaculos(getWidth(), alturaObstaculoSuperior + espacioVertical, ANCHO_OBSTACULO,
+                alturaVentana - alturaObstaculoSuperior - espacioVertical,
+                "Resources/obstacle.png"));
     }
 
     private void processMessage(String message) {
@@ -135,6 +177,10 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             g.fillRect(0, 0, getWidth(), getHeight());
         }
 
+        for (Obstaculos obstaculo : obstaculos) {
+            obstaculo.dibujar(g);
+        }
+
         localPlayer.draw(g);
         remotePlayer.draw(g);
 
@@ -148,11 +194,16 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             g.setColor(Color.YELLOW);
             g.drawString("Tu rival se desconectó", 20, 160);
         }
+
+        if (!timer.isRunning()) {
+            g.setColor(Color.RED);
+            g.drawString("Perdiste", 20, 200);
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (!sessionEnded && e.getKeyCode() == KeyEvent.VK_SPACE) {
+        if (e.getKeyCode() == KeyEvent.VK_SPACE && timer.isRunning()) {
             localPlayer.jump();
             client.sendJump();
         }
