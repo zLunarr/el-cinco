@@ -140,8 +140,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
         JButton volverPausa = crearBotonPausa("VOLVER", "Resources/imgvolver.png", 420, 100);
         volverPausa.addActionListener(e -> {
-            opcionesPanel.setVisible(false);
-            pausaPanel.setVisible(true);
+            mostrarSoloPanelPausa(pausaPanel);
             requestFocusInWindow();
         });
 
@@ -179,9 +178,23 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         return boton;
     }
 
+    private void mostrarSoloPanelPausa(JPanel panelVisible) {
+        boolean mostrarPausa = panelVisible == pausaPanel;
+        boolean mostrarOpciones = panelVisible == opcionesPanel;
+
+        pausaPanel.setVisible(mostrarPausa);
+        opcionesPanel.setVisible(mostrarOpciones);
+
+        pausaPanel.setEnabled(mostrarPausa);
+        opcionesPanel.setEnabled(mostrarOpciones);
+
+        setComponentZOrder(opcionesPanel, 0);
+        setComponentZOrder(pausaPanel, 1);
+        repaint();
+    }
+
     private void mostrarOpcionesPausa() {
-        pausaPanel.setVisible(false);
-        opcionesPanel.setVisible(true);
+        mostrarSoloPanelPausa(opcionesPanel);
         requestFocusInWindow();
     }
 
@@ -209,8 +222,11 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         }
 
         enPausa = !enPausa;
-        pausaPanel.setVisible(enPausa);
-        opcionesPanel.setVisible(false);
+        if (enPausa) {
+            mostrarSoloPanelPausa(pausaPanel);
+        } else {
+            mostrarSoloPanelPausa(null);
+        }
 
         if (enPausa) {
             tiempo.stop();
@@ -377,8 +393,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
     private void perder() {
         tiempo.stop();
         enPausa = false;
-        pausaPanel.setVisible(false);
-        opcionesPanel.setVisible(false);
+        mostrarSoloPanelPausa(null);
 
         if (puntuacion > highScore) {
             highScore = puntuacion;
@@ -400,8 +415,7 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         pajaro = new Personaje(100, 300);
 
         enPausa = false;
-        pausaPanel.setVisible(false);
-        opcionesPanel.setVisible(false);
+        mostrarSoloPanelPausa(null);
         mensajePerder.setVisible(false);
         botonReiniciar.setVisible(false);
 
