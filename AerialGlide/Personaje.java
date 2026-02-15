@@ -63,6 +63,10 @@ public class Personaje {
     public void draw(Graphics g) {
         if (imagen != null) {
             g.drawImage(imagen, x, y, ancho, alto, null);
+            if (tinte != null) {
+                g.setColor(tinte);
+                g.fillOval(x + 10, y + 10, ancho - 20, alto - 20);
+            }
         } else {
             g.setColor(Color.YELLOW);
             g.fillOval(x, y, ancho, alto);
