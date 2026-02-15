@@ -131,30 +131,32 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
 
     private JPanel crearPanelOpciones() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(0, 0, 0, 180));
+        panel.setOpaque(false);
 
         JPanel marcoOpciones = new JPanel(new GridBagLayout());
-        marcoOpciones.setBackground(new Color(25, 25, 35, 210));
+        marcoOpciones.setOpaque(false);
         marcoOpciones.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(255, 255, 255, 220), 3),
                 BorderFactory.createEmptyBorder(18, 28, 18, 28)));
 
         musicaCheckBox = new JCheckBox("Activar música");
         musicaCheckBox.setOpaque(false);
+        musicaCheckBox.setContentAreaFilled(false);
+        musicaCheckBox.setBorderPainted(false);
         musicaCheckBox.setForeground(Color.WHITE);
         musicaCheckBox.setFont(new Font("Arial", Font.BOLD, 28));
         musicaCheckBox.setSelected(musicaActivada);
         musicaCheckBox.addActionListener(e -> cambiarMusica(musicaCheckBox.isSelected()));
 
         JLabel volumenLabel = new JLabel("Volumen");
-        volumenLabel.setForeground(Color.WHITE);
+        volumenLabel.setForeground(new Color(205, 240, 255));
         volumenLabel.setFont(new Font("Arial", Font.BOLD, 24));
 
         JSlider volumenSlider = new JSlider(0, 100, volumenPorcentaje);
         volumenSlider.setOpaque(false);
         volumenSlider.setMajorTickSpacing(25);
-        volumenSlider.setPaintTicks(true);
-        volumenSlider.setPaintLabels(true);
+        volumenSlider.setPaintTicks(false);
+        volumenSlider.setPaintLabels(false);
         volumenSlider.setForeground(Color.WHITE);
         volumenSlider.addChangeListener(e -> {
             volumenPorcentaje = volumenSlider.getValue();
