@@ -231,8 +231,10 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         esperandoRevanchaLabel.setText("Esperando respuesta...");
         esperandoRevanchaLabel.setVisible(true);
 
-        if (remoteRematchRequested && hostAutoritativo) {
-            client.sendRestartRound();
+        if (remoteRematchRequested) {
+            if (hostAutoritativo) {
+                client.sendRestartRound();
+            }
             reiniciarRonda();
         }
         requestFocusInWindow();
@@ -335,7 +337,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         }
 
         if (localDefeatPending && !roundOver && System.currentTimeMillis() >= deadlineResolverDerrotaMs) {
-            finalizarRonda(remoteAlive ? "Perdiste" : "Empate");
+            finalizarRonda(remoteAlive ? construirMensajeDerrota() : construirMensajeEmpate());
         }
 
         client.sendState(localPlayer.getY(), getHeight(), localScore, localAlive);
@@ -372,6 +374,18 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         mostrarSoloPanel(pausaPanel);
     }
 
+    private String construirMensajeDerrota() {
+        return "Perdiste. Tu puntuación fue de: " + localScore;
+    }
+
+    private String construirMensajeVictoria() {
+        return "¡Ganaste! Tu puntuación fue de: " + localScore;
+    }
+
+    private String construirMensajeEmpate() {
+        return "Empate. Tu puntuación fue de: " + localScore;
+    }
+
     private void processMessage(String message) {
         String[] parts = message.split("\\$");
         switch (parts[0]) {
@@ -393,9 +407,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
                     if (!remoteAlive && !roundOver) {
                         if (!localAlive || localDefeatPending) {
-                            finalizarRonda("Empate");
+                            finalizarRonda(construirMensajeEmpate());
                         } else {
-                            finalizarRonda("Ganaste");
+                            finalizarRonda(construirMensajeVictoria());
                         }
                     }
                 }
@@ -413,8 +427,10 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                             : "Tu rival pidió revancha");
                     esperandoRevanchaLabel.setVisible(true);
                 }
-                if (localRematchRequested && remoteRematchRequested && hostAutoritativo) {
-                    client.sendRestartRound();
+                if (localRematchRequested && remoteRematchRequested) {
+                    if (hostAutoritativo) {
+                        client.sendRestartRound();
+                    }
                     reiniciarRonda();
                 }
             }
