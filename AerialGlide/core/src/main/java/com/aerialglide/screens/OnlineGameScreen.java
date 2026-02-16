@@ -31,6 +31,7 @@ public class OnlineGameScreen extends ScreenAdapter {
     private int localIndex = 0;
     private boolean connected;
     private boolean disconnected;
+    private boolean paused;
     private ServerState state;
 
     public OnlineGameScreen(AerialGlideGame game, String host, int port, String username, TcpGameServer ownedServer) {
@@ -63,6 +64,16 @@ public class OnlineGameScreen extends ScreenAdapter {
             return;
         }
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.P) && !disconnected) {
+            paused = !paused;
+        }
+
+        if (paused) {
+            handleAudioShortcuts();
+            draw();
+            return;
+        }
+
         if (connected) {
             String msg;
             while ((msg = client.poll()) != null) {
@@ -86,6 +97,21 @@ public class OnlineGameScreen extends ScreenAdapter {
         draw();
     }
 
+    private void handleAudioShortcuts() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            game.audio.setEnabled(!game.audio.isEnabled());
+            if (game.audio.isEnabled()) {
+                game.audio.playMusicLoop("Juego 35.wav");
+            }
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+            game.audio.setVolume(game.audio.getVolume() + 0.05f);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+            game.audio.setVolume(game.audio.getVolume() - 0.05f);
+        }
+    }
+
     private void draw() {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -104,21 +130,46 @@ public class OnlineGameScreen extends ScreenAdapter {
 
             int localScore = localIndex == 0 ? state.p1Score : state.p2Score;
             int remoteScore = localIndex == 0 ? state.p2Score : state.p1Score;
+            font.setColor(Color.WHITE);
             font.draw(game.batch, "Tu puntaje: " + localScore, 20, Gdx.graphics.getHeight() - 20);
             font.draw(game.batch, "Rival: " + remoteScore, 20, Gdx.graphics.getHeight() - 50);
+
             if (state.roundOver) {
-                String t = state.roundResult == 3 ? "Empate" : ((localIndex == 0 && state.roundResult == 1) || (localIndex == 1 && state.roundResult == 2) ? "Ganaste" : "Perdiste");
+                String t = state.roundResult == 3
+                        ? "Empate"
+                        : ((localIndex == 0 && state.roundResult == 1) || (localIndex == 1 && state.roundResult == 2)
+                        ? "Ganaste" : "Perdiste");
                 font.setColor(Color.YELLOW);
                 font.draw(game.batch, t + " - R para listo/reiniciar", 20, Gdx.graphics.getHeight() - 80);
-                font.setColor(Color.WHITE);
+            } else if (!state.p1Ready || !state.p2Ready) {
+                font.setColor(Color.YELLOW);
+                font.draw(game.batch, "Esperando al rival...", 20, Gdx.graphics.getHeight() - 80);
             }
+            font.setColor(Color.WHITE);
+        } else if (!disconnected) {
+            font.setColor(Color.YELLOW);
+            font.draw(game.batch, "Conectando a " + host + ":" + port + "...", 20, Gdx.graphics.getHeight() - 20);
+            font.setColor(Color.WHITE);
         }
+
         if (disconnected) {
             font.setColor(Color.RED);
             font.draw(game.batch, "Desconectado. ESC para volver al menu", 20, Gdx.graphics.getHeight() - 110);
             font.setColor(Color.WHITE);
         }
+
         font.draw(game.batch, "SPACE saltar", 20, Gdx.graphics.getHeight() - 140);
+        font.draw(game.batch, "P pausar", 20, Gdx.graphics.getHeight() - 170);
+
+        if (paused) {
+            font.setColor(Color.CYAN);
+            font.draw(game.batch, "PAUSA", 20, Gdx.graphics.getHeight() - 200);
+            font.draw(game.batch, "M activar/desactivar sonido", 20, Gdx.graphics.getHeight() - 230);
+            font.draw(game.batch, "UP/DOWN volumen: " + Math.round(game.audio.getVolume() * 100) + "%", 20, Gdx.graphics.getHeight() - 260);
+            font.draw(game.batch, "P reanudar", 20, Gdx.graphics.getHeight() - 290);
+            font.setColor(Color.WHITE);
+        }
+
         game.batch.end();
     }
 
@@ -127,7 +178,9 @@ public class OnlineGameScreen extends ScreenAdapter {
             client.send("DISCONNECT");
             client.close();
         }
-        if (ownedServer != null) ownedServer.stop();
+        if (ownedServer != null) {
+            ownedServer.stop();
+        }
         game.setScreen(new MainMenuScreen(game));
     }
 
@@ -138,8 +191,17 @@ public class OnlineGameScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
-        if (client != null) client.close();
-        if (ownedServer != null) ownedServer.stop();
-        bg.dispose();bird1.dispose();bird2.dispose();topObs.dispose();bottomObs.dispose();font.dispose();
+        if (client != null) {
+            client.close();
+        }
+        if (ownedServer != null) {
+            ownedServer.stop();
+        }
+        bg.dispose();
+        bird1.dispose();
+        bird2.dispose();
+        topObs.dispose();
+        bottomObs.dispose();
+        font.dispose();
     }
 }
