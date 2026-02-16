@@ -52,6 +52,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private boolean localAlive;
     private boolean remoteAlive;
     private boolean roundOver;
+    private boolean disconnectedFinish;
+    private String disconnectedPlayerName;
 
     private final JPanel pausaPanel;
     private final JPanel opcionesPanel;
@@ -322,6 +324,8 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         roundOver = false;
         localReady = false;
         remoteReady = false;
+        disconnectedFinish = false;
+        disconnectedPlayerName = "";
 
         estadoRonda.setVisible(false);
         actualizarEstadoReady();
@@ -364,6 +368,26 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         actualizarBotonReiniciar();
     }
 
+    private void finalizarPorDesconexion(String disconnectedPlayer) {
+        if (roundOver) {
+            return;
+        }
+
+        roundOver = true;
+        disconnectedFinish = true;
+        disconnectedPlayerName = disconnectedPlayer;
+        localReady = false;
+        remoteReady = false;
+
+        estadoRonda.setText("Desconexión");
+        estadoRonda.setVisible(false);
+        estadoReady.setVisible(false);
+        estadoReady.setText("");
+
+        mostrarSoloPanel(null);
+        actualizarBotonReiniciar();
+    }
+
     private String construirMensajeDerrota() {
         return "Perdiste. Tu puntuación fue de: " + localScore;
     }
@@ -386,6 +410,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                 if (!roundOver) {
                     finalizarRonda("Tu rival se desconectó");
                 }
+            }
+            case "disconnect_in_game" -> {
+                String disconnectedPlayer = parts.length > 1 ? parts[1] : players[1];
+                remoteAlive = false;
+                finalizarPorDesconexion(disconnectedPlayer);
             }
             default -> {
             }
@@ -522,10 +551,42 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         g.drawString(players[0] + ": " + localScore, 20, 40);
         g.drawString(players[1] + ": " + remoteScore, 20, 80);
         g.drawString("Espacio = saltar", 20, 120);
+
+        if (disconnectedFinish) {
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRect(0, 0, getWidth(), getHeight());
+
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 42));
+
+            int centerX = getWidth() / 2;
+            int centerY = getHeight() / 2;
+
+            String line1 = disconnectedPlayerName + " se desconectó de la partida.";
+            String line2 = "Ganaste la partida.";
+            String line3 = "Puntuación: " + localScore;
+
+            int y1 = centerY - 45;
+            int y2 = centerY + 10;
+            int y3 = centerY + 65;
+
+            g.drawString(line1, centerX - (g.getFontMetrics().stringWidth(line1) / 2), y1);
+            g.drawString(line2, centerX - (g.getFontMetrics().stringWidth(line2) / 2), y2);
+            g.drawString(line3, centerX - (g.getFontMetrics().stringWidth(line3) / 2), y3);
+
+            g.setFont(new Font("Arial", Font.PLAIN, 24));
+            String escHint = "Presiona ESC para volver al menú principal";
+            g.drawString(escHint, centerX - (g.getFontMetrics().stringWidth(escHint) / 2), y3 + 55);
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
+        if (disconnectedFinish && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            volverAlMenuPrincipal();
+            return;
+        }
+
         if (e.getKeyCode() == KeyEvent.VK_SPACE && !roundOver && timer.isRunning()) {
             client.sendJump();
         }
