@@ -10,6 +10,8 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
@@ -306,10 +308,12 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             localPlayer.update(getHeight());
         }
 
-        for (Obstaculos obstaculo : obstaculos) {
-            obstaculo.mover(10);
+    private void actualizarEstadoReady() {
+        if (!roundOver) {
+            estadoReady.setVisible(false);
+            estadoReady.setText("");
+            return;
         }
-        obstaculos.removeIf(Obstaculos::fueraDePantalla);
 
         contadorTiempo++;
         if (hostAutoritativo && contadorTiempo % 80 == 0) {
@@ -356,8 +360,19 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         int espacioVertical = 210;
         int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
 
-        obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
-                "Resources/obstacle - copia.png"));
+    private void generarObstaculos(int alturaObstaculoSuperior) {
+        int alturaVentana = getHeight();
+        int espacioVertical = 210;
+        int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
+
+    private void generarObstaculos(int alturaObstaculoSuperior) {
+        int alturaVentana = getHeight();
+        int espacioVertical = 210;
+        int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
+
+    private String construirMensajeDerrota() {
+        return "Perdiste. Tu puntuación fue de: " + localScore;
+    }
 
         obstaculos.add(new Obstaculos(getWidth(), alturaObstaculoSuperior + espacioVertical, ANCHO_OBSTACULO,
                 alturaInferior, "Resources/obstacle.png"));
@@ -454,6 +469,20 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             default:
                 break;
         }
+    }
+
+    private int escalarY(int yRemota, int altoRemoto, int altoLocal) {
+        if (altoRemoto <= 0) {
+            return yRemota;
+        }
+        return (int) Math.round((yRemota / (double) altoRemoto) * altoLocal);
+    }
+
+    private int escalarDistancia(int distanciaRemota, int altoRemoto, int altoLocal) {
+        if (altoRemoto <= 0) {
+            return distanciaRemota;
+        }
+        return (int) Math.round((distanciaRemota / (double) altoRemoto) * altoLocal);
     }
 
     @Override
