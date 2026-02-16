@@ -1,6 +1,8 @@
 package juegojava;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import javax.swing.*;
 
 public class Ejecucion {
@@ -25,6 +27,28 @@ public class Ejecucion {
         frame.setResizable(false);
         // Centra la ventana en la pantalla
         frame.setLocationRelativeTo(null);
+        // ESC siempre cierra la app, sin depender del foco de un panel específico
+        JRootPane rootPane = frame.getRootPane();
+        rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke("ESCAPE"), "salirAplicacion");
+        rootPane.getActionMap().put("salirAplicacion", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                System.exit(0);
+            }
+        });
+
+        // Fallback global: captura ESC desde el primer frame, incluso si el foco aún no está en un componente Swing.
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(event -> {
+            if (event.getID() == KeyEvent.KEY_PRESSED && event.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                frame.dispose();
+                System.exit(0);
+                return true;
+            }
+            return false;
+        });
+
         // Muestra la ventana
         frame.setVisible(true);
     }
