@@ -9,6 +9,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import juegojava.CollisionBoxes;
 
 public class Server extends Thread {
     private static final int PORT = 5555;
@@ -18,8 +19,6 @@ public class Server extends Thread {
     private static final int PLAYER_X = 220;
     private static final int PLAYER_WIDTH = 90;
     private static final int PLAYER_HEIGHT = 90;
-    private static final int PLAYER_HITBOX_MARGIN_X = 18;
-    private static final int PLAYER_HITBOX_MARGIN_Y = 14;
     private static final int GRAVITY = 1;
     private static final int JUMP_SPEED = -15;
 
@@ -27,11 +26,6 @@ public class Server extends Thread {
     private static final int OBSTACLE_SPEED = 10;
     private static final int OBSTACLE_GAP = 210;
     private static final int OBSTACLE_SPAWN_EVERY_TICKS = 80;
-
-    private static final int COLLISION_MARGIN_X = 8;
-    private static final int COLLISION_MARGIN_TOP = 6;
-    private static final int COLLISION_MARGIN_BOTTOM_TOP_PIPE = 28;
-    private static final int COLLISION_MARGIN_TOP_BOTTOM_PIPE = 12;
 
     private static Server instance;
 
@@ -298,11 +292,15 @@ public class Server extends Thread {
     }
 
     private void evaluateScoresAndCollisions() {
-        Rectangle[] playerBoxes = new Rectangle[]{playerBounds(0), playerBounds(1)};
+        Rectangle[] playerBoxes = new Rectangle[]{
+                CollisionBoxes.playerBounds(PLAYER_X, playerY[0], PLAYER_WIDTH, PLAYER_HEIGHT),
+                CollisionBoxes.playerBounds(PLAYER_X, playerY[1], PLAYER_WIDTH, PLAYER_HEIGHT)
+        };
 
         for (ObstaclePair obstacle : obstacles) {
-            Rectangle top = obstacleBounds(obstacle.x, 0, OBSTACLE_WIDTH, obstacle.topHeight, true);
-            Rectangle bottom = obstacleBounds(obstacle.x, obstacle.bottomY, OBSTACLE_WIDTH, obstacle.bottomHeight, false);
+            Rectangle top = CollisionBoxes.obstacleBounds(obstacle.x, 0, OBSTACLE_WIDTH, obstacle.topHeight);
+            Rectangle bottom = CollisionBoxes.obstacleBounds(obstacle.x, obstacle.bottomY, OBSTACLE_WIDTH,
+                    obstacle.bottomHeight);
 
             for (int i = 0; i < 2; i++) {
                 if (!playerAlive[i]) {
@@ -328,29 +326,6 @@ public class Server extends Thread {
                 }
             }
         }
-    }
-
-    private Rectangle playerBounds(int index) {
-        int hitboxX = PLAYER_X + PLAYER_HITBOX_MARGIN_X;
-        int hitboxY = playerY[index] + PLAYER_HITBOX_MARGIN_Y;
-        int hitboxWidth = Math.max(1, PLAYER_WIDTH - (PLAYER_HITBOX_MARGIN_X * 2));
-        int hitboxHeight = Math.max(1, PLAYER_HEIGHT - (PLAYER_HITBOX_MARGIN_Y * 2));
-        return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
-    }
-
-    private Rectangle obstacleBounds(int x, int y, int width, int height, boolean topPipe) {
-        int hitboxX = x + COLLISION_MARGIN_X;
-        int hitboxWidth = Math.max(1, width - (COLLISION_MARGIN_X * 2));
-
-        if (topPipe) {
-            int hitboxY = y + COLLISION_MARGIN_TOP;
-            int hitboxHeight = Math.max(1, height - COLLISION_MARGIN_TOP - COLLISION_MARGIN_BOTTOM_TOP_PIPE);
-            return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
-        }
-
-        int hitboxY = y + COLLISION_MARGIN_TOP_BOTTOM_PIPE;
-        int hitboxHeight = Math.max(1, height - COLLISION_MARGIN_TOP_BOTTOM_PIPE);
-        return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
     }
 
     private String buildStateMessage() {

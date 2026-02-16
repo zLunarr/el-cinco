@@ -11,7 +11,6 @@ public class Obstaculos {
     private final int width;
     private final int height;
     private final Image imagen;
-    private final Rectangle hitbox;
     private boolean puntuado;
 
     public Obstaculos(int x, int y, int width, int height, String rutaImagen) {
@@ -20,12 +19,10 @@ public class Obstaculos {
         this.width = width;
         this.height = height;
         this.imagen = ResourceLoader.loadImage(rutaImagen);
-        this.hitbox = new Rectangle(x, y, width, height);
     }
 
     public void mover(int velocidad) {
         x -= velocidad;
-        hitbox.setLocation(x, y);
     }
 
     public int getX() {
@@ -62,6 +59,6 @@ public class Obstaculos {
     }
 
     public Rectangle getBounds() {
-        return new Rectangle(hitbox);
+        return CollisionBoxes.obstacleBounds(x, y, width, height);
     }
 }
