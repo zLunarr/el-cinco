@@ -9,7 +9,6 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Client extends Thread {
-    private final String serverIpText;
     private final InetAddress ipServer;
     private final int serverPort;
     private final DatagramSocket socket;
@@ -18,7 +17,6 @@ public class Client extends Thread {
 
     public Client(String serverIp, int serverPort) {
         try {
-            this.serverIpText = serverIp;
             this.ipServer = InetAddress.getByName(serverIp);
             this.serverPort = serverPort;
             this.socket = new DatagramSocket();
@@ -63,10 +61,6 @@ public class Client extends Thread {
 
     public void sendPlayerReadyRestart() {
         sendMessage("player_ready_restart");
-    }
-
-    public String getServerIp() {
-        return serverIpText;
     }
 
     private void sendMessage(String message) {
