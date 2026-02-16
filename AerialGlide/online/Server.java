@@ -108,6 +108,13 @@ public class Server extends Thread {
         }
     }
 
+    public static synchronized void stopRunning() {
+        if (instance != null) {
+            instance.finish();
+            instance = null;
+        }
+    }
+
     @Override
     public void run() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::finish));
@@ -423,6 +430,9 @@ public class Server extends Thread {
         end = true;
         if (socket != null && !socket.isClosed()) {
             socket.close();
+        }
+        if (instance == this) {
+            instance = null;
         }
     }
 }
