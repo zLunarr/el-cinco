@@ -61,8 +61,8 @@ public class Client extends Thread {
         sendMessage("disconnect");
     }
 
-    public void sendReady() {
-        sendMessage("ready");
+    public void sendPlayerReadyRestart() {
+        sendMessage("player_ready_restart");
     }
 
     public String getServerIp() {
