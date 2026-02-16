@@ -18,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JSlider;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import online.Server;
 
 class MenuPanel extends JPanel {
@@ -29,6 +30,8 @@ class MenuPanel extends JPanel {
         setOpaque(false);
         fondo = ResourceLoader.loadImage("Resources/background.png");
         titulo = ResourceLoader.loadImage("Resources/menu_title.png");
+
+        registrarSalidaConEsc(frame);
 
         AudioManager.playMainLoop();
 
@@ -56,6 +59,18 @@ class MenuPanel extends JPanel {
             add(boton, gbc);
             gbc.gridy++;
         }
+    }
+
+    private void registrarSalidaConEsc(JFrame frame) {
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "salirJuego");
+        getActionMap().put("salirJuego", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (frame.getContentPane() == MenuPanel.this) {
+                    System.exit(0);
+                }
+            }
+        });
     }
 
     private JButton crearBotonConImagen(String texto, String rutaImagen, int ancho, int alto) {
