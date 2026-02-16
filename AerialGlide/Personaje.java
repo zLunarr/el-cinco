@@ -63,6 +63,10 @@ public class Personaje {
     public void draw(Graphics g) {
         if (imagen != null) {
             g.drawImage(imagen, x, y, ancho, alto, null);
+            if (tinte != null) {
+                g.setColor(tinte);
+                g.fillOval(x + 10, y + 10, ancho - 20, alto - 20);
+            }
         } else {
             g.setColor(Color.YELLOW);
             g.fillOval(x, y, ancho, alto);
@@ -75,6 +79,10 @@ public class Personaje {
         int hitboxWidth = Math.max(1, ancho - (HITBOX_MARGIN_X * 2));
         int hitboxHeight = Math.max(1, alto - (HITBOX_MARGIN_Y * 2));
         return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
+    }
+
+    public boolean tocoSuelo(int panelHeight) {
+        return y + alto >= panelHeight;
     }
 
     public int getY() {

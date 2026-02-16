@@ -10,6 +10,8 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
@@ -306,10 +308,12 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             localPlayer.update(getHeight());
         }
 
-        for (Obstaculos obstaculo : obstaculos) {
-            obstaculo.mover(10);
+    private void actualizarEstadoReady() {
+        if (!roundOver) {
+            estadoReady.setVisible(false);
+            estadoReady.setText("");
+            return;
         }
-        obstaculos.removeIf(Obstaculos::fueraDePantalla);
 
         contadorTiempo++;
         if (hostAutoritativo && contadorTiempo % 80 == 0) {
@@ -356,8 +360,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         int espacioVertical = 210;
         int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
 
-        obstaculos.add(new Obstaculos(getWidth(), 0, ANCHO_OBSTACULO, alturaObstaculoSuperior,
-                "Resources/obstacle - copia.png"));
+    private String construirMensajeDerrota() {
+        return "Perdiste. Tu puntuación fue de: " + localScore;
+    }
 
         obstaculos.add(new Obstaculos(getWidth(), alturaObstaculoSuperior + espacioVertical, ANCHO_OBSTACULO,
                 alturaInferior, "Resources/obstacle.png"));
@@ -444,6 +449,113 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             default -> {
             }
         }
+    }
+
+    private void aplicarEstadoServidor(String[] parts) {
+        if (parts.length < 15) {
+            return;
+        }
+
+        int remoteWorldHeight = Integer.parseInt(parts[1]);
+        boolean serverRoundOver = Boolean.parseBoolean(parts[2]);
+        int roundResult = Integer.parseInt(parts[3]);
+
+        int localIndex = hostAutoritativo ? 0 : 1;
+        int p1Y = Integer.parseInt(parts[4]);
+        boolean p1Alive = Boolean.parseBoolean(parts[6]);
+        int p1Score = Integer.parseInt(parts[7]);
+
+        int p2Y = Integer.parseInt(parts[8]);
+        boolean p2Alive = Boolean.parseBoolean(parts[10]);
+        int p2Score = Integer.parseInt(parts[11]);
+
+        int altoLocal = Math.max(1, getHeight());
+        int yP1Escalada = escalarY(p1Y, remoteWorldHeight, altoLocal);
+        int yP2Escalada = escalarY(p2Y, remoteWorldHeight, altoLocal);
+
+        if (localIndex == 0) {
+            localPlayer.setY(yP1Escalada);
+            remotePlayer.setY(yP2Escalada);
+            localAlive = p1Alive;
+            remoteAlive = p2Alive;
+            localScore = p1Score;
+            remoteScore = p2Score;
+        } else {
+            localPlayer.setY(yP2Escalada);
+            remotePlayer.setY(yP1Escalada);
+            localAlive = p2Alive;
+            remoteAlive = p1Alive;
+            localScore = p2Score;
+            remoteScore = p1Score;
+        }
+
+        boolean p1Ready = Boolean.parseBoolean(parts[12]);
+        boolean p2Ready = Boolean.parseBoolean(parts[13]);
+
+        if (localIndex == 0) {
+            localReady = p1Ready;
+            remoteReady = p2Ready;
+        } else {
+            localReady = p2Ready;
+            remoteReady = p1Ready;
+        }
+        actualizarBotonReiniciar();
+
+        sincronizarObstaculos(parts, 14, remoteWorldHeight, altoLocal);
+
+
+        if (serverRoundOver && !roundOver) {
+            int localResult = localIndex == 0 ? roundResult : (roundResult == 1 ? 2 : (roundResult == 2 ? 1 : roundResult));
+            if (localResult == 3) {
+                finalizarRonda(construirMensajeEmpate());
+            } else if (localResult == 1) {
+                finalizarRonda(construirMensajeVictoria());
+            } else if (localResult == 2) {
+                finalizarRonda(construirMensajeDerrota());
+            }
+        }
+
+        actualizarEstadoReady();
+    }
+
+    private void sincronizarObstaculos(String[] parts, int startIndex, int remoteWorldHeight, int altoLocal) {
+        int obstacleCount = Integer.parseInt(parts[startIndex]);
+        int expectedLength = startIndex + 1 + (obstacleCount * 4);
+        if (parts.length < expectedLength) {
+            return;
+        }
+
+        obstaculos.clear();
+        int idx = startIndex + 1;
+        for (int i = 0; i < obstacleCount; i++) {
+            int x = Integer.parseInt(parts[idx++]);
+            int topHeight = Integer.parseInt(parts[idx++]);
+            int bottomY = Integer.parseInt(parts[idx++]);
+            int bottomHeight = Integer.parseInt(parts[idx++]);
+
+            int topHeightScaled = escalarDistancia(topHeight, remoteWorldHeight, altoLocal);
+            int bottomYScaled = escalarY(bottomY, remoteWorldHeight, altoLocal);
+            int bottomHeightScaled = escalarDistancia(bottomHeight, remoteWorldHeight, altoLocal);
+
+            obstaculos.add(new Obstaculos(x, 0, ANCHO_OBSTACULO, Math.max(1, topHeightScaled),
+                    "Resources/obstacle - copia.png"));
+            obstaculos.add(new Obstaculos(x, bottomYScaled, ANCHO_OBSTACULO, Math.max(1, bottomHeightScaled),
+                    "Resources/obstacle.png"));
+        }
+    }
+
+    private int escalarY(int yRemota, int altoRemoto, int altoLocal) {
+        if (altoRemoto <= 0) {
+            return yRemota;
+        }
+        return (int) Math.round((yRemota / (double) altoRemoto) * altoLocal);
+    }
+
+    private int escalarDistancia(int distanciaRemota, int altoRemoto, int altoLocal) {
+        if (altoRemoto <= 0) {
+            return distanciaRemota;
+        }
+        return (int) Math.round((distanciaRemota / (double) altoRemoto) * altoLocal);
     }
 
     @Override
