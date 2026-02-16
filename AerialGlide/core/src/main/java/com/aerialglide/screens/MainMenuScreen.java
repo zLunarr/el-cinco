@@ -15,7 +15,8 @@ public class MainMenuScreen extends ScreenAdapter {
     private final BitmapFont font = new BitmapFont();
     private final Texture bg = new Texture("background.png");
     private final Texture title = new Texture("menu_title.png");
-    private String ipBuffer = "192.168.";
+    private String ipBuffer = "127.0.0.1";
+    private String username = "Jugador";
 
     public MainMenuScreen(AerialGlideGame game) {
         this.game = game;
@@ -31,36 +32,70 @@ public class MainMenuScreen extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
             TcpGameServer server = new TcpGameServer(GameConfig.DEFAULT_PORT);
             server.start();
-            game.setScreen(new OnlineGameScreen(game, "127.0.0.1", GameConfig.DEFAULT_PORT, "Servidor", server));
+            game.setScreen(new OnlineGameScreen(game, "127.0.0.1", GameConfig.DEFAULT_PORT, username, server));
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) {
-            game.setScreen(new OnlineGameScreen(game, ipBuffer, GameConfig.DEFAULT_PORT, "Cliente", null));
+            game.setScreen(new OnlineGameScreen(game, ipBuffer, GameConfig.DEFAULT_PORT, username, null));
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) {
             game.setScreen(new OptionsScreen(game, this));
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) Gdx.app.exit();
-        if (Gdx.input.isKeyJustPressed(Input.Keys.BACKSPACE) && !ipBuffer.isEmpty()) {
-            ipBuffer = ipBuffer.substring(0, ipBuffer.length() - 1);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) {
+            requestIp();
         }
-        for (int i = Input.Keys.NUM_0; i <= Input.Keys.NUM_9; i++) {
-            if (Gdx.input.isKeyJustPressed(i)) ipBuffer += (char) ('0' + i - Input.Keys.NUM_0);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.N)) {
+            requestName();
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.PERIOD)) ipBuffer += '.';
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            Gdx.app.exit();
+        }
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         game.batch.begin();
         game.batch.draw(bg, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         game.batch.draw(title, 40, Gdx.graphics.getHeight() - 220, 520, 200);
-        font.draw(game.batch, "1) Offline", 80, 300);
-        font.draw(game.batch, "2) Online Host (server + cliente)", 80, 260);
-        font.draw(game.batch, "3) Online Cliente", 80, 220);
-        font.draw(game.batch, "4) Opciones", 80, 180);
-        font.draw(game.batch, "ESC salir", 80, 140);
-        font.draw(game.batch, "IP cliente (tecla numeros y punto): " + ipBuffer, 80, 100);
-        font.draw(game.batch, "Puerto fijo: " + GameConfig.DEFAULT_PORT, 80, 70);
+        font.draw(game.batch, "1) Offline", 80, 320);
+        font.draw(game.batch, "2) Online Host (server + cliente)", 80, 280);
+        font.draw(game.batch, "3) Online Cliente", 80, 240);
+        font.draw(game.batch, "4) Opciones", 80, 200);
+        font.draw(game.batch, "N) Cambiar nombre: " + username, 80, 160);
+        font.draw(game.batch, "I) Cambiar IP cliente: " + ipBuffer, 80, 120);
+        font.draw(game.batch, "Puerto fijo: " + GameConfig.DEFAULT_PORT, 80, 90);
+        font.draw(game.batch, "ESC salir", 80, 60);
         game.batch.end();
+    }
+
+    private void requestIp() {
+        Gdx.input.getTextInput(new Input.TextInputListener() {
+            @Override
+            public void input(String text) {
+                String clean = text == null ? "" : text.trim();
+                if (!clean.isEmpty()) {
+                    ipBuffer = clean;
+                }
+            }
+
+            @Override
+            public void canceled() {
+            }
+        }, "IP del servidor", ipBuffer, "127.0.0.1");
+    }
+
+    private void requestName() {
+        Gdx.input.getTextInput(new Input.TextInputListener() {
+            @Override
+            public void input(String text) {
+                String clean = text == null ? "" : text.trim();
+                if (!clean.isEmpty()) {
+                    username = clean;
+                }
+            }
+
+            @Override
+            public void canceled() {
+            }
+        }, "Nombre del jugador", username, "Jugador");
     }
 
     @Override
