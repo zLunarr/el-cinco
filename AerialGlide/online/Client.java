@@ -70,19 +70,31 @@ public class Client extends Thread {
     }
 
     private void sendMessage(String message) {
+        if (end || socket.isClosed()) {
+            return;
+        }
+
         byte[] data = message.getBytes();
         DatagramPacket packet = new DatagramPacket(data, data.length, ipServer, serverPort);
 
         try {
             socket.send(packet);
+        } catch (SocketException closed) {
+            end = true;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public void finish() {
+        if (end) {
+            return;
+        }
+
         end = true;
-        socket.close();
+        if (!socket.isClosed()) {
+            socket.close();
+        }
         interrupt();
     }
 }

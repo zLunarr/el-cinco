@@ -2,14 +2,17 @@ package juegojava;
 
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import online.Client;
+import online.Server;
 
-public class MultiplayerLobbyPanel extends JPanel {
+public class MultiplayerLobbyPanel extends JPanel implements KeyListener {
     private final JFrame frame;
     private final Client client;
     private final String serverIp;
@@ -17,15 +20,18 @@ public class MultiplayerLobbyPanel extends JPanel {
     private final Timer pollTimer;
     private final Timer reconnectTimer;
     private final String username;
+    private final boolean host;
 
     private boolean connected;
+    private boolean cancelling;
     private int playerNumber;
     private String[] players = {"Jugador 1", "Jugador 2"};
 
-    public MultiplayerLobbyPanel(JFrame frame, String serverIp, String username) {
+    public MultiplayerLobbyPanel(JFrame frame, String serverIp, String username, boolean host) {
         this.frame = frame;
         this.serverIp = serverIp;
         this.username = username;
+        this.host = host;
         this.estado = new JLabel("Esperando respuesta del servidor...", SwingConstants.CENTER);
         this.estado.setFont(new Font("Arial", Font.BOLD, 32));
         setLayout(new BorderLayout());
@@ -37,13 +43,16 @@ public class MultiplayerLobbyPanel extends JPanel {
         this.pollTimer = new Timer(100, e -> readMessages());
         this.reconnectTimer = new Timer(1000, e -> retryConnect());
 
+        setFocusable(true);
+        addKeyListener(this);
+
         this.pollTimer.start();
         this.reconnectTimer.start();
         this.client.connect(username);
     }
 
     private void retryConnect() {
-        if (!connected) {
+        if (!connected && !cancelling) {
             client.connect(username);
             estado.setText("Conectando... si tarda, revisá IP/firewall (puerto UDP 5555)");
         }
@@ -92,10 +101,52 @@ public class MultiplayerLobbyPanel extends JPanel {
         panel.requestFocusInWindow();
     }
 
+    private void cancelWaitingRoom() {
+        if (cancelling) {
+            return;
+        }
+
+        cancelling = true;
+        pollTimer.stop();
+        reconnectTimer.stop();
+
+        if (connected) {
+            client.sendDisconnect();
+        }
+        client.finish();
+
+        if (host) {
+            Server.stopRunning();
+        }
+
+        MenuPanel.mostrarOnlineMenu(frame);
+    }
+
     @Override
     public void removeNotify() {
         super.removeNotify();
         pollTimer.stop();
         reconnectTimer.stop();
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        requestFocusInWindow();
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            cancelWaitingRoom();
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
     }
 }
