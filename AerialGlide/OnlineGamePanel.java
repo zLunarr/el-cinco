@@ -161,12 +161,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         sonidoCheckBox.setSelected(AudioManager.isSoundEnabled());
         sonidoCheckBox.addActionListener(e -> cambiarSonido(sonidoCheckBox.isSelected()));
 
-        JButton activarSonido = crearBotonConImagen("Activar sonido", null, 420, 80);
-        activarSonido.addActionListener(e -> cambiarSonido(true));
-
-        JButton desactivarSonido = crearBotonConImagen("Desactivar sonido", null, 420, 80);
-        desactivarSonido.addActionListener(e -> cambiarSonido(false));
-
         JLabel volumenLabel = new JLabel("Volumen");
         volumenLabel.setForeground(new Color(205, 240, 255));
         volumenLabel.setFont(new Font("Arial", Font.BOLD, 24));
@@ -192,17 +186,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         marcoOpciones.add(sonidoCheckBox, marcoGbc);
 
         marcoGbc.gridy = 1;
-        marcoOpciones.add(activarSonido, marcoGbc);
-
-        marcoGbc.gridy = 2;
-        marcoOpciones.add(desactivarSonido, marcoGbc);
-
-        marcoGbc.gridy = 3;
         marcoGbc.insets = new Insets(8, 8, 8, 8);
         marcoGbc.anchor = GridBagConstraints.CENTER;
         marcoOpciones.add(volumenLabel, marcoGbc);
 
-        marcoGbc.gridy = 4;
+        marcoGbc.gridy = 2;
         marcoGbc.fill = GridBagConstraints.HORIZONTAL;
         marcoGbc.weightx = 1.0;
         marcoOpciones.add(volumenSlider, marcoGbc);
