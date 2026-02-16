@@ -74,6 +74,7 @@ public class Server extends Thread {
     private final int[] playerScore;
     private final boolean[] jumpQueued;
     private final boolean[] playerReady;
+    private boolean restartPending;
 
     private int tickCounter;
     private boolean roundOver;
@@ -89,6 +90,7 @@ public class Server extends Thread {
         this.playerScore = new int[]{0, 0};
         this.jumpQueued = new boolean[]{false, false};
         this.playerReady = new boolean[]{false, false};
+        this.restartPending = false;
 
         try {
             this.socket = new DatagramSocket(PORT);
@@ -153,7 +155,7 @@ public class Server extends Thread {
                 pingEveryone("waiting");
             }
             case "jump" -> jumpQueued[sender] = true;
-            case "ready" -> onPlayerReady(sender);
+            case "player_ready_restart" -> onPlayerReadyRestart(sender);
             default -> {
             }
         }
@@ -181,12 +183,10 @@ public class Server extends Thread {
         }
 
         resetRound();
-        playerReady[0] = true;
-        playerReady[1] = true;
         pingEveryone("start$" + peers.get(0).username + "$" + peers.get(1).username);
     }
 
-    private void onPlayerReady(int playerIndex) {
+    private void onPlayerReadyRestart(int playerIndex) {
         if (playerIndex < 0 || playerIndex >= playerReady.length || peers.size() < 2) {
             return;
         }
@@ -195,13 +195,15 @@ public class Server extends Thread {
             return;
         }
 
+        restartPending = true;
         playerReady[playerIndex] = true;
         stateDirty = true;
 
         if (allPlayersReady()) {
             resetRound();
-            playerReady[0] = true;
-            playerReady[1] = true;
+            pingEveryone("restart_game");
+            playerReady[0] = false;
+            playerReady[1] = false;
             stateDirty = true;
         }
     }
@@ -215,7 +217,7 @@ public class Server extends Thread {
             return;
         }
 
-        if (!roundOver && allPlayersReady()) {
+        if (!roundOver && !restartPending) {
             tickCounter++;
             applyPlayerPhysics(0);
             applyPlayerPhysics(1);
@@ -386,6 +388,7 @@ public class Server extends Thread {
         tickCounter = 0;
         roundOver = false;
         roundResult = 0;
+        restartPending = false;
         stateDirty = true;
     }
 

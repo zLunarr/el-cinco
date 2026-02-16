@@ -57,6 +57,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private final JPanel opcionesPanel;
     private final JLabel estadoRonda;
     private JCheckBox sonidoCheckBox;
+    private JButton reiniciarButton;
     private final JLabel estadoReady;
     private boolean localReady;
     private boolean remoteReady;
@@ -115,7 +116,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", 500, 120);
         JButton opcionesButton = crearBotonConImagen("OPCIONES", "Resources/option_button.png", 500, 120);
-        JButton reiniciarButton = crearBotonConImagen("REINICIAR", "Resources/imgreiniciar.png", 500, 120);
+        reiniciarButton = crearBotonConImagen("REINICIAR", "Resources/imgreiniciar.png", 500, 120);
 
         volverButton.addActionListener(e -> volverAlMenuPrincipal());
         opcionesButton.addActionListener(e -> {
@@ -260,8 +261,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         }
 
         localReady = true;
-        client.sendReady();
+        actualizarBotonReiniciar();
         actualizarEstadoReady();
+        client.sendPlayerReadyRestart();
         mostrarSoloPanel(pausaPanel);
     }
 
@@ -283,11 +285,18 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             estadoReady.setText("");
             return;
         } else if (localReady) {
-            estadoReady.setText("Esperando respuesta...");
+            estadoReady.setText("Esperando al otro jugador...");
         } else {
             estadoReady.setText("Tu rival está listo para reiniciar.");
         }
         estadoReady.setVisible(true);
+    }
+
+    private void actualizarBotonReiniciar() {
+        if (reiniciarButton == null) {
+            return;
+        }
+        reiniciarButton.setEnabled(roundOver && !localReady);
     }
 
     private void actualizarLayoutMenus() {
@@ -328,6 +337,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         estadoRonda.setVisible(false);
         actualizarEstadoReady();
+        actualizarBotonReiniciar();
         mostrarSoloPanel(null);
 
         if (!timer.isRunning()) {
@@ -363,6 +373,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         estadoRonda.setText(estado);
         estadoRonda.setVisible(true);
         mostrarSoloPanel(pausaPanel);
+        actualizarBotonReiniciar();
     }
 
     private String construirMensajeDerrota() {
@@ -381,6 +392,7 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         String[] parts = message.split("\\$");
         switch (parts[0]) {
             case "server_state" -> aplicarEstadoServidor(parts);
+            case "restart_game" -> reiniciarEstadoLocal();
             case "disconnect" -> {
                 remoteAlive = false;
                 if (!roundOver) {
@@ -440,13 +452,10 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             localReady = p2Ready;
             remoteReady = p1Ready;
         }
+        actualizarBotonReiniciar();
 
         sincronizarObstaculos(parts, 14, remoteWorldHeight, altoLocal);
 
-        if (!serverRoundOver && roundOver && localReady && remoteReady) {
-            reiniciarEstadoLocal();
-            return;
-        }
 
         if (serverRoundOver && !roundOver) {
             int localResult = localIndex == 0 ? roundResult : (roundResult == 1 ? 2 : (roundResult == 2 ? 1 : roundResult));
