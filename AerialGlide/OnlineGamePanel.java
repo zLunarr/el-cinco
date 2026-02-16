@@ -360,6 +360,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         int espacioVertical = 210;
         int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
 
+    private void generarObstaculos(int alturaObstaculoSuperior) {
+        int alturaVentana = getHeight();
+        int espacioVertical = 210;
+        int alturaInferior = Math.max(1, alturaVentana - alturaObstaculoSuperior - espacioVertical);
+
     private String construirMensajeDerrota() {
         return "Perdiste. Tu puntuación fue de: " + localScore;
     }
@@ -393,13 +398,18 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     private void processMessage(String message) {
         String[] parts = message.split("\\$");
-        switch (parts[0]) {
-            case "jump" -> {
+        if (parts.length == 0) {
+            return;
+        }
+
+        String tipo = parts[0];
+        switch (tipo) {
+            case "jump":
                 if (!roundOver && remoteAlive) {
                     remotePlayer.jump();
                 }
-            }
-            case "state" -> {
+                break;
+            case "state":
                 if (parts.length >= 5) {
                     int yRecibida = Integer.parseInt(parts[1]);
                     int altoPanelRemoto = Integer.parseInt(parts[2]);
@@ -407,7 +417,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                     remoteAlive = Boolean.parseBoolean(parts[4]);
 
                     int altoLocal = Math.max(1, getHeight());
-                    int yEscalada = altoPanelRemoto <= 0 ? yRecibida : (int) Math.round((yRecibida / (double) altoPanelRemoto) * altoLocal);
+                    int yEscalada = altoPanelRemoto <= 0
+                            ? yRecibida
+                            : (int) Math.round((yRecibida / (double) altoPanelRemoto) * altoLocal);
                     remotePlayer.setY(yEscalada);
 
                     if (!remoteAlive && !roundOver) {
@@ -418,13 +430,13 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                         }
                     }
                 }
-            }
-            case "spawn" -> {
+                break;
+            case "spawn":
                 if (!hostAutoritativo && parts.length >= 2 && !roundOver) {
                     generarObstaculos(Integer.parseInt(parts[1]));
                 }
-            }
-            case "rematch_request" -> {
+                break;
+            case "rematch_request":
                 remoteRematchRequested = true;
                 if (roundOver) {
                     esperandoRevanchaLabel.setText(localRematchRequested
@@ -438,16 +450,18 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
                     }
                     reiniciarRonda();
                 }
-            }
-            case "restart_round" -> reiniciarRonda();
-            case "disconnect" -> {
+                break;
+            case "restart_round":
+                reiniciarRonda();
+                break;
+            case "disconnect":
                 remoteAlive = false;
                 if (!roundOver) {
                     finalizarRonda("Tu rival se desconectó");
                 }
-            }
-            default -> {
-            }
+                break;
+            default:
+                break;
         }
     }
 

@@ -338,6 +338,16 @@ class MenuPanel extends JPanel {
         return new Dimension(ancho, alto);
     }
 
+    private Dimension calcularTamanoPorTexto(String textoObjetivo, String textoReferencia, int anchoBase, int altoBase) {
+        if (textoObjetivo == null || textoObjetivo.isBlank() || textoReferencia == null || textoReferencia.isBlank()) {
+            return new Dimension(anchoBase, altoBase);
+        }
+        double proporcion = (double) textoObjetivo.length() / textoReferencia.length();
+        int ancho = (int) Math.round(anchoBase * proporcion);
+        int alto = (int) Math.round(altoBase * proporcion);
+        return new Dimension(ancho, alto);
+    }
+
     private void cargarMusicaFondo() {
         try {
             if (musicaFondo != null && musicaFondo.isRunning()) {
