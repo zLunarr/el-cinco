@@ -150,8 +150,12 @@ class MenuPanel extends JPanel {
     }
 
     private void iniciarSalaComoHost(JFrame frame) {
-        Server.ensureRunning();
         String username = pedirUsername();
+        if (username == null) {
+            return;
+        }
+
+        Server.ensureRunning();
         String localIp = obtenerIpLocal();
         JOptionPane.showMessageDialog(frame, "Servidor creado. Pasale esta IP al otro jugador: " + localIp + "\nPuerto UDP: 5555");
         MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, "127.0.0.1", username);
@@ -167,6 +171,10 @@ class MenuPanel extends JPanel {
         }
 
         String username = pedirUsername();
+        if (username == null) {
+            return;
+        }
+
         MultiplayerLobbyPanel lobby = new MultiplayerLobbyPanel(frame, ip.trim(), username);
         frame.setContentPane(lobby);
         frame.revalidate();
@@ -175,9 +183,14 @@ class MenuPanel extends JPanel {
 
     private String pedirUsername() {
         String username = JOptionPane.showInputDialog(this, "Tu nombre:", "Jugador");
-        if (username == null || username.isBlank()) {
+        if (username == null) {
+            return null;
+        }
+
+        if (username.isBlank()) {
             return "Jugador" + (int) (Math.random() * 1000);
         }
+
         return username.trim();
     }
 
