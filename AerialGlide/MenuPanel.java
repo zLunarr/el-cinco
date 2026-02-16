@@ -102,10 +102,6 @@ class MenuPanel extends JPanel {
         return boton;
     }
 
-    private Image escalarImagen(Image image, int ancho, int alto) {
-        return image.getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
-    }
-
     private void agregarEventos(JFrame frame, JButton[] botones) {
         botones[0].addActionListener(e -> iniciarJuego(frame));
         botones[1].addActionListener(e -> mostrarMenuMultijugador(frame));
@@ -265,13 +261,7 @@ class MenuPanel extends JPanel {
         musicaCheckBox.setForeground(Color.WHITE);
         musicaCheckBox.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 28));
         musicaCheckBox.setSelected(AudioManager.isSoundEnabled());
-        musicaCheckBox.addItemListener(e -> {
-            if (musicaCheckBox.isSelected()) {
-                AudioManager.setSoundEnabled(true);
-            } else {
-                AudioManager.setSoundEnabled(false);
-            }
-        });
+        musicaCheckBox.addItemListener(e -> AudioManager.setSoundEnabled(musicaCheckBox.isSelected()));
 
         JLabel volumenLabel = new JLabel("Volumen");
         volumenLabel.setForeground(new Color(205, 240, 255));
@@ -283,9 +273,7 @@ class MenuPanel extends JPanel {
         volumenSlider.setPaintTicks(false);
         volumenSlider.setPaintLabels(false);
         volumenSlider.setForeground(Color.WHITE);
-        volumenSlider.addChangeListener(e -> {
-            AudioManager.setVolumePercent(volumenSlider.getValue());
-        });
+        volumenSlider.addChangeListener(e -> AudioManager.setVolumePercent(volumenSlider.getValue()));
 
         Dimension tamanoVolver = calcularTamanoPorTexto("VOLVER", "OPCIONES", 420, 120);
         JButton volverButton = crearBotonConImagen("VOLVER", "Resources/imgvolver.png", tamanoVolver.width, tamanoVolver.height);

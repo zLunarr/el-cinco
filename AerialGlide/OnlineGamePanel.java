@@ -46,11 +46,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
     private final String[] players;
     private final boolean hostAutoritativo;
-    private final String serverIp;
-    private final String username;
-
-    private boolean localAlive;
-    private boolean remoteAlive;
     private boolean roundOver;
 
     private final JPanel pausaPanel;
@@ -62,14 +57,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
     private boolean localReady;
     private boolean remoteReady;
 
-    public OnlineGamePanel(JFrame frame, Client client, String[] players, boolean hostAutoritativo, String serverIp,
-            String username) {
+    public OnlineGamePanel(JFrame frame, Client client, String[] players, boolean hostAutoritativo) {
         this.frame = frame;
         this.client = client;
         this.players = players;
         this.hostAutoritativo = hostAutoritativo;
-        this.serverIp = serverIp;
-        this.username = username;
         this.fondo = ResourceLoader.loadImage("Resources/fondo juego.jpg");
 
         this.obstaculos = new ArrayList<>();
@@ -317,8 +309,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         localScore = 0;
         remoteScore = 0;
-        localAlive = true;
-        remoteAlive = true;
         roundOver = false;
         localReady = false;
         remoteReady = false;
@@ -382,7 +372,6 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
             case "server_state" -> aplicarEstadoServidor(parts);
             case "restart_game" -> reiniciarEstadoLocal();
             case "disconnect" -> {
-                remoteAlive = false;
                 if (!roundOver) {
                     finalizarRonda("Tu rival se desconectó");
                 }
@@ -403,11 +392,9 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
 
         int localIndex = hostAutoritativo ? 0 : 1;
         int p1Y = Integer.parseInt(parts[4]);
-        boolean p1Alive = Boolean.parseBoolean(parts[6]);
         int p1Score = Integer.parseInt(parts[7]);
 
         int p2Y = Integer.parseInt(parts[8]);
-        boolean p2Alive = Boolean.parseBoolean(parts[10]);
         int p2Score = Integer.parseInt(parts[11]);
 
         int altoLocal = Math.max(1, getHeight());
@@ -417,15 +404,11 @@ public class OnlineGamePanel extends JPanel implements ActionListener, KeyListen
         if (localIndex == 0) {
             localPlayer.setY(yP1Escalada);
             remotePlayer.setY(yP2Escalada);
-            localAlive = p1Alive;
-            remoteAlive = p2Alive;
             localScore = p1Score;
             remoteScore = p2Score;
         } else {
             localPlayer.setY(yP2Escalada);
             remotePlayer.setY(yP1Escalada);
-            localAlive = p2Alive;
-            remoteAlive = p1Alive;
             localScore = p2Score;
             remoteScore = p1Score;
         }
