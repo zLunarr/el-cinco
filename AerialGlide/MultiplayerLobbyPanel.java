@@ -18,6 +18,7 @@ public class MultiplayerLobbyPanel extends JPanel {
     private final String username;
 
     private boolean connected;
+    private int playerNumber;
     private String[] players = {"Jugador 1", "Jugador 2"};
 
     public MultiplayerLobbyPanel(JFrame frame, String serverIp, String username) {
@@ -58,6 +59,7 @@ public class MultiplayerLobbyPanel extends JPanel {
         switch (parts[0]) {
             case "connected" -> {
                 connected = true;
+                playerNumber = Integer.parseInt(parts[1]);
                 estado.setText("Conectado como jugador " + parts[1] + ". Esperando rival...");
             }
             case "waiting" -> estado.setText("Sala de espera: falta 1 jugador...");
@@ -80,7 +82,8 @@ public class MultiplayerLobbyPanel extends JPanel {
         pollTimer.stop();
         reconnectTimer.stop();
 
-        OnlineGamePanel panel = new OnlineGamePanel(client, players);
+        boolean soyHost = playerNumber == 1 || (playerNumber == 0 && username.equals(players[0]));
+        OnlineGamePanel panel = new OnlineGamePanel(frame, client, players, soyHost);
         frame.setContentPane(panel);
         frame.revalidate();
         frame.repaint();
