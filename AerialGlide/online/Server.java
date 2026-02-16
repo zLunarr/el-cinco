@@ -269,9 +269,10 @@ public class Server extends Thread {
 
         if (playerY[playerIndex] + PLAYER_HEIGHT >= WORLD_HEIGHT) {
             playerY[playerIndex] = WORLD_HEIGHT - PLAYER_HEIGHT;
-            if (playerVelocity[playerIndex] > 0) {
-                playerVelocity[playerIndex] = 0;
-            }
+            playerVelocity[playerIndex] = 0;
+            playerAlive[playerIndex] = false;
+            stateDirty = true;
+            return;
         }
 
         if (playerY[playerIndex] < 0) {
