@@ -81,6 +81,10 @@ public class Personaje {
         return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
     }
 
+    public boolean tocoSuelo(int panelHeight) {
+        return y + alto >= panelHeight;
+    }
+
     public int getY() {
         return y;
     }

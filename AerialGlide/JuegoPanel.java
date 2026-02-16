@@ -324,6 +324,10 @@ public class JuegoPanel extends JPanel implements ActionListener, KeyListener {
         }
 
         pajaro.update(getHeight());
+        if (pajaro.tocoSuelo(getHeight())) {
+            perder();
+            return;
+        }
 
         for (Obstaculos obstaculo : obstaculos) {
             obstaculo.mover(10);
