@@ -240,18 +240,6 @@ class MenuPanel extends JPanel {
             }
         });
 
-        JButton activarSonido = crearBotonSecundario("Activar sonido");
-        activarSonido.addActionListener(e -> {
-            musicaCheckBox.setSelected(true);
-            AudioManager.setSoundEnabled(true);
-        });
-
-        JButton desactivarSonido = crearBotonSecundario("Desactivar sonido");
-        desactivarSonido.addActionListener(e -> {
-            musicaCheckBox.setSelected(false);
-            AudioManager.setSoundEnabled(false);
-        });
-
         JLabel volumenLabel = new JLabel("Volumen");
         volumenLabel.setForeground(new Color(205, 240, 255));
         volumenLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
@@ -278,15 +266,9 @@ class MenuPanel extends JPanel {
         marcoOpciones.add(musicaCheckBox, marcoGbc);
 
         marcoGbc.gridy = 1;
-        marcoOpciones.add(activarSonido, marcoGbc);
-
-        marcoGbc.gridy = 2;
-        marcoOpciones.add(desactivarSonido, marcoGbc);
-
-        marcoGbc.gridy = 3;
         marcoOpciones.add(volumenLabel, marcoGbc);
 
-        marcoGbc.gridy = 4;
+        marcoGbc.gridy = 2;
         marcoGbc.fill = GridBagConstraints.HORIZONTAL;
         marcoGbc.weightx = 1.0;
         marcoOpciones.add(volumenSlider, marcoGbc);
