@@ -23,7 +23,6 @@ public class MultiplayerLobbyPanel extends JPanel implements KeyListener {
     private final boolean host;
 
     private boolean connected;
-    private boolean cancelling;
     private int playerNumber;
     private String[] players = {"Jugador 1", "Jugador 2"};
 
@@ -94,7 +93,7 @@ public class MultiplayerLobbyPanel extends JPanel implements KeyListener {
         reconnectTimer.stop();
 
         boolean soyHost = playerNumber == 1 || (playerNumber == 0 && username.equals(players[0]));
-        OnlineGamePanel panel = new OnlineGamePanel(frame, client, players, soyHost, serverIp, username);
+        OnlineGamePanel panel = new OnlineGamePanel(frame, client, players, soyHost);
         frame.setContentPane(panel);
         frame.revalidate();
         frame.repaint();

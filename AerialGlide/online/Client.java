@@ -53,6 +53,10 @@ public class Client extends Thread {
         sendMessage("connect$" + username);
     }
 
+    public void sendState(int y, int panelHeight, int score, boolean alive) {
+        sendMessage("state$" + y + "$" + panelHeight + "$" + score + "$" + alive);
+    }
+
     public void sendJump() {
         sendMessage("jump");
     }
@@ -61,12 +65,16 @@ public class Client extends Thread {
         sendMessage("disconnect");
     }
 
-    public void sendPlayerReadyRestart() {
-        sendMessage("player_ready_restart");
+    public void sendObstacleSpawn(int alturaObstaculoSuperior) {
+        sendMessage("spawn$" + alturaObstaculoSuperior);
     }
 
-    public String getServerIp() {
-        return serverIpText;
+    public void sendRematchRequest() {
+        sendMessage("rematch_request");
+    }
+
+    public void sendRestartRound() {
+        sendMessage("restart_round");
     }
 
     private void sendMessage(String message) {

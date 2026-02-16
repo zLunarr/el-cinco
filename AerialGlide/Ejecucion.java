@@ -1,6 +1,7 @@
 package juegojava;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import javax.swing.*;
 
 public class Ejecucion {
@@ -25,6 +26,18 @@ public class Ejecucion {
         frame.setResizable(false);
         // Centra la ventana en la pantalla
         frame.setLocationRelativeTo(null);
+        // ESC siempre cierra la app, sin depender del foco de un panel específico
+        JRootPane rootPane = frame.getRootPane();
+        rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke("ESCAPE"), "salirAplicacion");
+        rootPane.getActionMap().put("salirAplicacion", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                System.exit(0);
+            }
+        });
+
         // Muestra la ventana
         frame.setVisible(true);
     }

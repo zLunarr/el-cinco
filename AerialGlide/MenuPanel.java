@@ -338,4 +338,29 @@ class MenuPanel extends JPanel {
         return new Dimension(ancho, alto);
     }
 
+    private void cargarMusicaFondo() {
+        try {
+            if (musicaFondo != null && musicaFondo.isRunning()) {
+                musicaFondo.stop();
+            }
+            File musicaArchivo = ResourceLoader.findFile("Resources/Juego 35.wav");
+            if (musicaArchivo == null) {
+                musicaActivada = false;
+                return;
+            }
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicaArchivo);
+            musicaFondo = AudioSystem.getClip();
+            musicaFondo.open(audioStream);
+            musicaFondo.loop(Clip.LOOP_CONTINUOUSLY);
+            aplicarVolumen();
+            musicaActivada = true;
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            musicaActivada = false;
+        }
+        double proporcion = (double) textoObjetivo.length() / textoReferencia.length();
+        int ancho = (int) Math.round(anchoBase * proporcion);
+        int alto = (int) Math.round(altoBase * proporcion);
+        return new Dimension(ancho, alto);
+    }
+
 }
