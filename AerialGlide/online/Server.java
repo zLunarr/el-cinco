@@ -157,9 +157,20 @@ public class Server extends Thread {
 
         switch (command) {
             case "disconnect" -> {
+                boolean partidaActiva = peers.size() == 2 && !roundOver;
+                String disconnectedUsername = peers.get(sender).username;
+
                 peers.remove(sender);
+
+                if (partidaActiva && !peers.isEmpty()) {
+                    Peer ganador = peers.get(0);
+                    sendMessage("disconnect_in_game$" + disconnectedUsername, ganador.ip, ganador.port);
+                }
+
                 resetRound();
-                pingEveryone("waiting");
+                if (!partidaActiva) {
+                    pingEveryone("waiting");
+                }
             }
             case "jump" -> jumpQueued[sender] = true;
             case "player_ready_restart" -> onPlayerReadyRestart(sender);
